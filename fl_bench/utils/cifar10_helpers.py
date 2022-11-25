@@ -189,7 +189,9 @@ class CIFAR10_Idx(Dataset):
     def __build_cifar_subset__(self):
         # if index provided, extract subset, otherwise use the whole set
         cifar_dataobj = datasets.CIFAR10(
-            self.root, self.train, self.transform, self.download
+            self.root,
+            self.train,
+            self.transform,
         )
         data = cifar_dataobj.data
         target = np.array(cifar_dataobj.targets)
