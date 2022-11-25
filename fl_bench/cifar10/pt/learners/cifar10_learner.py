@@ -15,12 +15,15 @@
 import copy
 import os
 
+from dotenv import load_dotenv
+load_dotenv()
+
+
 import numpy as np
 import torch
 import torch.optim as optim
 from pt.networks.cifar10_nets import ModerateCNN
-from pt.utils.cifar10_data_splitter import CIFAR10_ROOT
-from pt.utils.cifar10_dataset import CIFAR10_Idx
+from fl_bench.utils mport CIFAR10_Idx
 from torch.utils.tensorboard import SummaryWriter
 from torchvision import datasets, transforms
 
