@@ -12,7 +12,7 @@
     "components": [
         {
             "id": "data_splitter",
-            "path": "pt.utils.cifar10_data_splitter.Cifar10DataSplitter",
+            "path": "fl_bench.utils.cifar10_helpers.Cifar10DataSplitter",
             "args": {
                 "split_dir": "{TRAIN_SPLIT_ROOT}",
                 "num_sites": "{min_clients}",
@@ -24,7 +24,7 @@
             "name": "PTFileModelPersistor",
             "args": {
                 "model": {
-                    "path": "pt.networks.cifar10_nets.ModerateCNN",
+                    "path": "fl_bench.networks.cifar10_nets.ModerateCNN",
                     "args": {}
                 }
             }
