@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 echo "PYTHONPATH is ${PYTHONPATH}"
 
-algorithms_dir="${PWD}/job_configs"
+algorithms_dir="${PWD}/fl_bench/cifar10/job_configs"
 
 config=$1
 alpha=$2
