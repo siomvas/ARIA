@@ -1,6 +1,7 @@
 monai==1.0.1
 monai-nvflare==0.2.1
 msgpack==1.0.3
+dotenv
 networkx==2.8.7
 nibabel==4.0.2
 nni==2.9
