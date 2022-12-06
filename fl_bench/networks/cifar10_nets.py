@@ -104,3 +104,43 @@ class ModerateCNN(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.fc_layer(x)
         return x
+
+
+# FedSAM
+# c=64 k=5 ReLU -> MaxPool
+# c=64 k=5 ReLU -> MaxPool
+# FC n=384
+# FC n=192
+class ClientModel(nn.Module):
+    def __init__(self, lr, num_classes, device):
+        super(ClientModel, self).__init__()
+        self.num_classes = num_classes
+        self.device = device
+        self.lr = lr
+
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=5),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2)
+        )
+
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=5),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2)
+        )
+
+        self.classifier = nn.Sequential(
+            nn.Linear(64*5*5, 384),
+            nn.ReLU(),
+            nn.Linear(384, 192),
+            nn.ReLU(),
+            nn.Linear(192, self.num_classes)
+        )
+
+    def forward(self, x):
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = torch.reshape(x, (x.shape[0], -1))
+        x = self.classifier(x)
+        return 

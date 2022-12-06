@@ -22,7 +22,7 @@ load_dotenv()
 import numpy as np
 import torch
 import torch.optim as optim
-from pt.networks.cifar10_nets import ModerateCNN
+from fl_bench.networks.cifar10_nets import ModerateCNN
 from utils.cifar10_helpers import CIFAR10_Idx
 from torch.utils.tensorboard import SummaryWriter
 from torchvision import datasets, transforms
