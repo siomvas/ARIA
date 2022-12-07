@@ -23,7 +23,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 from fl_bench.networks.cifar10_nets import ModerateCNN
-from utils.cifar10_helpers import CIFAR10_Idx
+from fl_bench.utils.cifar10_helpers import CIFAR10_Idx
 from torch.utils.tensorboard import SummaryWriter
 from torchvision import datasets, transforms
 
@@ -35,6 +35,8 @@ from nvflare.apis.signal import Signal
 from nvflare.app_common.abstract.learner_spec import Learner
 from nvflare.app_common.app_constant import AppConstants, ModelName, ValidateType
 from nvflare.app_common.pt.pt_fedproxloss import PTFedProxLoss
+
+import aim
 
 
 CIFAR10_ROOT = os.getenv("CIFAR10_ROOT")
@@ -83,7 +85,7 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
 
         self.writer = None
         self.analytic_sender_id = analytic_sender_id
-
+        self.aim_run = None
         # Epoch counter
         self.epoch_of_start_time = 0
         self.epoch_global = 0
@@ -123,9 +125,13 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
             fl_ctx,
             f"Client {self.client_id} initialized at \n {self.app_root} \n with args: {fl_args}",
         )
-
         self.local_model_file = os.path.join(self.app_root, "local_model.pt")
         self.best_local_model_file = os.path.join(self.app_root, "best_local_model.pt")
+
+        self.aim_run = aim.Run(experiment=fl_ctx.get_prop(FLContextKey.CURRENT_JOB_ID))
+        self.aim_run["app_root"] = self.app_root
+        self.aim_run["client_id"] = self.client_id
+        self.aim_run["fl_ctx"] = fl_ctx.get_all_public_props()
 
         # Select local TensorBoard writer or event-based writer for streaming
         self.writer = parts.get(
@@ -264,6 +270,12 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
                 avg_loss += loss.item()
             self.writer.add_scalar(
                 "train_loss", avg_loss / len(train_loader), current_step
+            )
+            self.aim_run.track(
+                value=(avg_loss / len(train_loader)),
+                step=current_step,
+                name="client_train_loss",
+                context={"client_id": self.client_id},
             )
             if val_freq > 0 and epoch % val_freq == 0:
                 acc = self.local_valid(
@@ -423,6 +435,12 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
             metric = correct / float(total)
             if tb_id:
                 self.writer.add_scalar(tb_id, metric, self.epoch_global)
+            self.aim_run.track(
+                value=metric,
+                name="client_val_loss",
+                step=self.epoch_global,
+                context={"client_id": self.client_id},
+            )
         return metric
 
     def validate(

@@ -1,14 +1,14 @@
+aim==3.15.1
 monai==1.0.1
 monai-nvflare==0.2.1
 msgpack==1.0.3
-dotenv
 networkx==2.8.7
 nibabel==4.0.2
 nni==2.9
 numpy
-nvflare==2.2.1
+nvflare==2.2.3
 pandas==1.5.1
-tensorboard==2.10.1
+tensorboard
 tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.1
 termcolor==2.1.0
