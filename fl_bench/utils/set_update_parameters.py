@@ -13,10 +13,8 @@
 # limitations under the License.
 
 import argparse
-from email.policy import default
 import json
 import os
-from socket import AI_MASK
 import uuid
 
 
@@ -36,7 +34,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-job", type=str, help="Path to job config.")
     parser.add_argument(
-        "--train_split_root", type=str, default=argparse.SUPPRESS, help="Location where to save data splits.",
+        "--train_split_root",
+        type=str,
+        default=argparse.SUPPRESS,
+        help="Location where to save data splits.",
     )
     parser.add_argument(
         "--alpha",
@@ -64,7 +65,8 @@ def main():
         type=int,
         default=argparse.SUPPRESS,
         help='local aggregation epochs'
-    )    
+    )
+
     args = parser.parse_args()
 
     job_name = os.path.basename(args.job)
@@ -96,6 +98,9 @@ def main():
 
     if 'num_rounds' in args:
         # update federated rounds
+        client_config = read_json(client_config_filename)
+        server_config = read_json(server_config_filename)
+        meta_config = read_json(meta_config_filename)
         print(f"Setting num_rounds to num_rounds={args.num_rounds}")
         token = str(uuid.uuid4())
         job_name = f"{job_name}_num_rounds{args.num_rounds}"
@@ -108,6 +113,9 @@ def main():
 
     if 'lr' in args:
         # update federated rounds
+        client_config = read_json(client_config_filename)
+        server_config = read_json(server_config_filename)
+        meta_config = read_json(meta_config_filename)
         print(f"Setting lr to lr={args.lr}")
         token = str(uuid.uuid4())
         job_name = f"{job_name}_lr{args.lr}"
@@ -116,12 +124,24 @@ def main():
 
         write_json(client_config, client_config_filename)
         write_json(meta_config, meta_config_filename)
+    
+    if 'epochs' in args:
+        # update local epochs
+        client_config = read_json(client_config_filename)
+        server_config = read_json(server_config_filename)
+        meta_config = read_json(meta_config_filename)
+        print(f"Setting epochs to epochs={args.epochs}")
+        token = str(uuid.uuid4())
+        job_name = f"{job_name}_epochs{args.epochs}"
+        client_config["components"][0]["args"]["aggregation_epochs"] = args.epochs
+        meta_config["name"] = job_name
+        write_json(client_config, client_config_filename)
+        write_json(meta_config, meta_config_filename)
 
 if __name__ == "__main__":
     main()
 
 
-# TODO epochs
 # TODO re-read json and meta
 # Test aim 
 # commit
