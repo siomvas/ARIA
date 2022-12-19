@@ -36,7 +36,7 @@ def main():
     parser.add_argument(
         "--train_split_root",
         type=str,
-        default=argparse.SUPPRESS,
+        default="/path/to/FL_bench/res/cifar10_splits",
         help="Location where to save data splits.",
     )
     parser.add_argument(
@@ -49,41 +49,81 @@ def main():
         "Assumes central training.",
     )
     parser.add_argument(
-        '--num_rounds',
+        "--num_rounds",
         type=int,
         default=argparse.SUPPRESS,
-        help='number of global rounds'
+        help="number of global rounds",
     )
     parser.add_argument(
-        '--lr',
-        type=float,
-        default=argparse.SUPPRESS,
-        help='local learning rate'
+        "--lr", type=float, default=argparse.SUPPRESS, help="local learning rate"
     )
     parser.add_argument(
-        '--epochs',
-        type=int,
-        default=argparse.SUPPRESS,
-        help='local aggregation epochs'
+        "--epochs", type=int, default=argparse.SUPPRESS, help="local aggregation epochs"
     )
 
     args = parser.parse_args()
 
     job_name = os.path.basename(args.job)
-    client_config_filename = os.path.join(args.job, job_name, "config", "config_fed_client.json")
-    server_config_filename = os.path.join(args.job, job_name, "config", "config_fed_server.json")
+    client_config_filename = os.path.join(
+        args.job, job_name, "config", "config_fed_client.json"
+    )
+    server_config_filename = os.path.join(
+        args.job, job_name, "config", "config_fed_server.json"
+    )
     meta_config_filename = os.path.join(args.job, "meta.json")
     client_config = read_json(client_config_filename)
     server_config = read_json(server_config_filename)
     meta_config = read_json(meta_config_filename)
 
-    if 'alpha' in args:
+    if "num_rounds" in args:
+        # update federated rounds
+        client_config = read_json(client_config_filename)
+        server_config = read_json(server_config_filename)
+        meta_config = read_json(meta_config_filename)
+        print(f"Setting num_rounds to num_rounds={args.num_rounds}")
+        token = str(uuid.uuid4())
+        job_name = f"{job_name}_num_rounds={args.num_rounds}"
+        server_config["num_rounds"] = args.num_rounds
+        meta_config["name"] = job_name
+
+        write_json(client_config, client_config_filename)
+        write_json(server_config, server_config_filename)
+        write_json(meta_config, meta_config_filename)
+
+    if "lr" in args:
+        # update federated rounds
+        client_config = read_json(client_config_filename)
+        server_config = read_json(server_config_filename)
+        meta_config = read_json(meta_config_filename)
+        print(f"Setting lr to lr={args.lr}")
+        token = str(uuid.uuid4())
+        job_name = f"{job_name}_lr={args.lr}"
+        client_config["components"][0]["args"]["lr"] = args.lr
+        meta_config["name"] = job_name
+
+        write_json(client_config, client_config_filename)
+        write_json(meta_config, meta_config_filename)
+
+    if "epochs" in args:
+        # update local epochs
+        client_config = read_json(client_config_filename)
+        server_config = read_json(server_config_filename)
+        meta_config = read_json(meta_config_filename)
+        print(f"Setting epochs to epochs={args.epochs}")
+        token = str(uuid.uuid4())
+        job_name = f"{job_name}_epochs={args.epochs}"
+        client_config["components"][0]["args"]["aggregation_epochs"] = args.epochs
+        meta_config["name"] = job_name
+        write_json(client_config, client_config_filename)
+        write_json(meta_config, meta_config_filename)
+
+    if "alpha" in args:
         # update alpha and split data dir
         print(f"Updating {meta_config_filename} to alpha={args.alpha}")
 
         if args.alpha > 0.0:
             token = str(uuid.uuid4())
-            job_name = f"{job_name}_alpha{args.alpha}"
+            job_name = f"{job_name}_alpha={args.alpha}"
             server_config["alpha"] = args.alpha
             meta_config["name"] = job_name
             split_dir = os.path.join(args.train_split_root, f"{job_name}_{token}")
@@ -96,52 +136,6 @@ def main():
         else:
             print("Assuming centralized training.")
 
-    if 'num_rounds' in args:
-        # update federated rounds
-        client_config = read_json(client_config_filename)
-        server_config = read_json(server_config_filename)
-        meta_config = read_json(meta_config_filename)
-        print(f"Setting num_rounds to num_rounds={args.num_rounds}")
-        token = str(uuid.uuid4())
-        job_name = f"{job_name}_num_rounds{args.num_rounds}"
-        server_config["num_rounds"] = args.num_rounds
-        meta_config["name"] = job_name
-
-        write_json(client_config, client_config_filename)
-        write_json(server_config, server_config_filename)
-        write_json(meta_config, meta_config_filename)
-
-    if 'lr' in args:
-        # update federated rounds
-        client_config = read_json(client_config_filename)
-        server_config = read_json(server_config_filename)
-        meta_config = read_json(meta_config_filename)
-        print(f"Setting lr to lr={args.lr}")
-        token = str(uuid.uuid4())
-        job_name = f"{job_name}_lr{args.lr}"
-        client_config["components"][0]["args"]["lr"] = args.lr
-        meta_config["name"] = job_name
-
-        write_json(client_config, client_config_filename)
-        write_json(meta_config, meta_config_filename)
-    
-    if 'epochs' in args:
-        # update local epochs
-        client_config = read_json(client_config_filename)
-        server_config = read_json(server_config_filename)
-        meta_config = read_json(meta_config_filename)
-        print(f"Setting epochs to epochs={args.epochs}")
-        token = str(uuid.uuid4())
-        job_name = f"{job_name}_epochs{args.epochs}"
-        client_config["components"][0]["args"]["aggregation_epochs"] = args.epochs
-        meta_config["name"] = job_name
-        write_json(client_config, client_config_filename)
-        write_json(meta_config, meta_config_filename)
 
 if __name__ == "__main__":
     main()
-
-
-# TODO re-read json and meta
-# Test aim 
-# commit

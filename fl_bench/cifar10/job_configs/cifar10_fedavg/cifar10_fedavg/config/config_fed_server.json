@@ -1,8 +1,8 @@
 {
     "format_version": 2,
-    "min_clients": 8,
-    "num_rounds": 50,
-    "TRAIN_SPLIT_ROOT": "/tmp/cifar10_splits/cifar10_fedavg_alpha1.0_210fbb28-b675-4a2d-968f-9eab236de585",
+    "min_clients": 10,
+    "num_rounds": 2,
+    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/res/cifar10_splits/cifar10_fedavg_num_rounds=2_lr=0.0001_epochs=2_alpha=1.0_fa2dfb5a-50b6-470c-a079-00c5bb39cf22",
     "alpha": 1.0,
     "server": {
         "heart_beat_timeout": 600
@@ -71,16 +71,6 @@
                 "shareable_generator_id": "shareable_generator",
                 "train_task_name": "train",
                 "train_timeout": 0
-            }
-        },
-        {
-            "id": "cross_site_model_eval",
-            "name": "CrossSiteModelEval",
-            "args": {
-                "model_locator_id": "model_locator",
-                "submit_model_timeout": 600,
-                "validation_timeout": 6000,
-                "cleanup_models": true
             }
         }
     ]

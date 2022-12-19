@@ -36,7 +36,7 @@ from nvflare.app_common.abstract.learner_spec import Learner
 from nvflare.app_common.app_constant import AppConstants, ModelName, ValidateType
 from nvflare.app_common.pt.pt_fedproxloss import PTFedProxLoss
 
-import aim
+import wandb
 
 
 CIFAR10_ROOT = os.getenv("CIFAR10_ROOT")
@@ -82,10 +82,9 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
         self.central = central
         self.batch_size = batch_size
         self.num_workers = num_workers
-
+        self.wandb_runner = None
         self.writer = None
         self.analytic_sender_id = analytic_sender_id
-        self.aim_run = None
         # Epoch counter
         self.epoch_of_start_time = 0
         self.epoch_global = 0
@@ -128,10 +127,22 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
         self.local_model_file = os.path.join(self.app_root, "local_model.pt")
         self.best_local_model_file = os.path.join(self.app_root, "best_local_model.pt")
 
-        self.aim_run = aim.Run(experiment=fl_ctx.get_prop(FLContextKey.CURRENT_JOB_ID))
-        self.aim_run["app_root"] = self.app_root
-        self.aim_run["client_id"] = self.client_id
-        self.aim_run["fl_ctx"] = fl_ctx.get_all_public_props()
+        config = {
+            "fl_args": fl_args,
+            "client_id": self.client_id,
+            "app_root": self.app_root,
+            "fl_ctx": fl_ctx.get_all_public_props(),
+        }
+        os.environ["https_proxy"] = "http://proxy.example.org:3128"
+        self.wandb_runner = wandb.init(
+            entity="vscity",
+            project="fl_bench",
+            group="test2",  # all runs for the experiment in one group
+            name=self.client_id,
+            config=config,
+            id=fl_args.token,
+        )
+        os.environ["https_proxy"] = ""
 
         # Select local TensorBoard writer or event-based writer for streaming
         self.writer = parts.get(
@@ -228,6 +239,9 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
 
     def finalize(self, fl_ctx: FLContext):
         # collect threads, close files here
+        os.environ["https_proxy"] = "http://proxy.example.org:3128"
+        self.wandb_runner.finish()
+        os.environ["https_proxy"] = ""
         pass
 
     def local_train(
@@ -271,12 +285,11 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
             self.writer.add_scalar(
                 "train_loss", avg_loss / len(train_loader), current_step
             )
-            self.aim_run.track(
-                value=(avg_loss / len(train_loader)),
-                step=current_step,
-                name="client_train_loss",
-                context={"client_id": self.client_id},
+            os.environ["https_proxy"] = "http://proxy.example.org:3128"
+            wandb.log(
+                {"train_loss": avg_loss / len(train_loader), "step": current_step}
             )
+            os.environ["https_proxy"] = ""
             if val_freq > 0 and epoch % val_freq == 0:
                 acc = self.local_valid(
                     self.valid_loader,
@@ -435,12 +448,10 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
             metric = correct / float(total)
             if tb_id:
                 self.writer.add_scalar(tb_id, metric, self.epoch_global)
-            self.aim_run.track(
-                value=metric,
-                name="client_val_loss",
-                step=self.epoch_global,
-                context={"client_id": self.client_id},
-            )
+            os.environ["https_proxy"] = "http://proxy.example.org:3128"
+            wandb.log({"client_val_loss": metric, "epoch_global": self.epoch_global})
+            os.environ["https_proxy"] = ""
+
         return metric
 
     def validate(

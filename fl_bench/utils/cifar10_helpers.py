@@ -68,7 +68,7 @@ class Cifar10DataSplitter(FLComponent):
     def __init__(
         self,
         split_dir: str = None,
-        num_sites: int = 8,
+        num_sites: int = 10,
         alpha: float = 0.5,
         seed: int = 0,
     ):

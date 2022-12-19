@@ -1,6 +1,6 @@
 {
     "format_version": 2,
-    "TRAIN_SPLIT_ROOT": "/tmp/cifar10_splits/cifar10_fedavg_alpha1.0_210fbb28-b675-4a2d-968f-9eab236de585",
+    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/res/cifar10_splits/cifar10_fedavg_num_rounds=2_lr=0.0001_epochs=2_alpha=1.0_fa2dfb5a-50b6-470c-a079-00c5bb39cf22",
     "executors": [
         {
             "tasks": [
@@ -25,8 +25,8 @@
             "path": "fl_bench.cifar10.pt.learners.cifar10_learner.CIFAR10Learner",
             "args": {
                 "train_idx_root": "{TRAIN_SPLIT_ROOT}",
-                "aggregation_epochs": 4,
-                "lr": 0.01
+                "aggregation_epochs": 2,
+                "lr": 0.0001
             }
         }
     ]

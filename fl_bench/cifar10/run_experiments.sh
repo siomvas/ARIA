@@ -5,9 +5,9 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 
-#SBATCH --cpus-per-task=6             # Use 4 cores
-#SBATCH --mem=32GB                    # CPU RAM
-#SBATCH --time=06:00:00
+#SBATCH --cpus-per-task=4             # Use 4 cores
+#SBATCH --mem=64GB                    # CPU RAM
+#SBATCH --time=04:00:00
 #SBATCH --gres=gpu:1
 #SBATCH -e %x_%j.e                    # Standard output and error log [%j is replaced with the jobid]
 #SBATCH -o %x_%j.o                    # [%x with the job name], make sure 'results' folder exists.
@@ -28,9 +28,9 @@ python3 ./utils/cifar10_helpers.py
 
 algorithms_dir="${PWD}/cifar10/job_configs"
 
-./utils/set_update_parameters.py -job=${algorithms_dir}/cifar10_fedavg --alpha 1 --lr 1e-4 --num_rounds 2 --epochs 2
+python3 ./utils/set_update_parameters.py -job=${algorithms_dir}/cifar10_fedavg --alpha 1 --lr 1e-3 --num_rounds 10 --epochs 5
 
-nvflare simulator cifar10/job_configs/cifar10_fedavg -w ${RESULT_ROOT}/fedavg_alpha1 -n 8 --threads 8
+nvflare simulator cifar10/job_configs/cifar10_fedavg -w ${RESULT_ROOT}/fedavg_alpha_new2 -n 10
 # -gpu $CUDA_VISIBLE_DEVICES
 
 
