@@ -1,7 +1,7 @@
 #Splits and job outputs
 res/
-*.e
-*.o
+fl_bench/*.e
+fl_bench/*.o
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -294,3 +294,5 @@ audit.log
 # python
 __pycache__
 .pyc
+
+res/cifar10_splits/*
