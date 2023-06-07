@@ -1,5 +1,7 @@
-#Splits
+#Splits and job outputs
 res/
+*.e
+*.o
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

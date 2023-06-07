@@ -49,6 +49,12 @@ def main():
         "Assumes central training.",
     )
     parser.add_argument(
+        "--model_name",
+        type=str,
+        default=argparse.SUPPRESS,
+        help="name of model",
+    )
+    parser.add_argument(
         "--num_rounds",
         type=int,
         default=argparse.SUPPRESS,
@@ -77,7 +83,6 @@ def main():
 
     if "num_rounds" in args:
         # update federated rounds
-        client_config = read_json(client_config_filename)
         server_config = read_json(server_config_filename)
         meta_config = read_json(meta_config_filename)
         print(f"Setting num_rounds to num_rounds={args.num_rounds}")
@@ -86,14 +91,12 @@ def main():
         server_config["num_rounds"] = args.num_rounds
         meta_config["name"] = job_name
 
-        write_json(client_config, client_config_filename)
         write_json(server_config, server_config_filename)
         write_json(meta_config, meta_config_filename)
 
     if "lr" in args:
         # update federated rounds
         client_config = read_json(client_config_filename)
-        server_config = read_json(server_config_filename)
         meta_config = read_json(meta_config_filename)
         print(f"Setting lr to lr={args.lr}")
         token = str(uuid.uuid4())
@@ -107,7 +110,6 @@ def main():
     if "epochs" in args:
         # update local epochs
         client_config = read_json(client_config_filename)
-        server_config = read_json(server_config_filename)
         meta_config = read_json(meta_config_filename)
         print(f"Setting epochs to epochs={args.epochs}")
         token = str(uuid.uuid4())
@@ -115,6 +117,23 @@ def main():
         client_config["components"][0]["args"]["aggregation_epochs"] = args.epochs
         meta_config["name"] = job_name
         write_json(client_config, client_config_filename)
+        write_json(meta_config, meta_config_filename)
+
+    if "model_name" in args:
+        # update model name
+        client_config = read_json(client_config_filename)
+        server_config = read_json(server_config_filename)
+        meta_config = read_json(meta_config_filename)
+        print(f"Setting model name to {args.model_name}")
+        token = str(uuid.uuid4())
+        job_name = f"{job_name}_model={args.model_name}"
+        client_config["components"][0]["args"]["model_arch"] = args.model_name
+        server_config["model_path"] = (
+            "fl_bench.networks.cifar10_nets." + args.model_name
+        )
+        meta_config["name"] = job_name
+        write_json(client_config, client_config_filename)
+        write_json(server_config, server_config_filename)
         write_json(meta_config, meta_config_filename)
 
     if "alpha" in args:
@@ -126,7 +145,7 @@ def main():
             job_name = f"{job_name}_alpha={args.alpha}"
             server_config["alpha"] = args.alpha
             meta_config["name"] = job_name
-            split_dir = os.path.join(args.train_split_root, f"{job_name}_{token}")
+            split_dir = os.path.join(args.train_split_root, f"{job_name}")
             print(f"Set train split root to {split_dir}")
             server_config["TRAIN_SPLIT_ROOT"] = split_dir
             client_config["TRAIN_SPLIT_ROOT"] = split_dir

@@ -1,12 +1,12 @@
 {
-  "name": "cifar10_central",
-  "deploy_map": {
-    "cifar10_central": [
-      "@ALL"
+    "name": "cifar10_central_num_rounds=1_lr=0.01_epochs=200_model=ModerateCNN_alpha=0.6",
+    "deploy_map": {
+        "cifar10_central": [
+            "@ALL"
+        ]
+    },
+    "min_clients": 1,
+    "mandatory_clients": [
+        "site-1"
     ]
-  },
-  "min_clients": 1,
-  "mandatory_clients": [
-    "site-1"
-  ]
 }

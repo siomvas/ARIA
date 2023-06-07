@@ -22,7 +22,7 @@ load_dotenv()
 import numpy as np
 import torch
 import torch.optim as optim
-from fl_bench.networks.cifar10_nets import ModerateCNN
+from fl_bench.networks.cifar10_nets import *
 from fl_bench.utils.cifar10_helpers import CIFAR10_Idx
 from torch.utils.tensorboard import SummaryWriter
 from torchvision import datasets, transforms
@@ -46,6 +46,7 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
     def __init__(
         self,
         train_idx_root: str = "./dataset",
+        model_arch: str = "ModerateCNN",
         aggregation_epochs: int = 1,
         lr: float = 1e-2,
         fedproxloss_mu: float = 0.0,
@@ -77,6 +78,7 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
         self.train_idx_root = train_idx_root
         self.aggregation_epochs = aggregation_epochs
         self.lr = lr
+        self.model_arch = model_arch
         self.fedproxloss_mu = fedproxloss_mu
         self.best_acc = 0.0
         self.central = central
@@ -133,16 +135,6 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
             "app_root": self.app_root,
             "fl_ctx": fl_ctx.get_all_public_props(),
         }
-        os.environ["https_proxy"] = "http://proxy.example.org:3128"
-        self.wandb_runner = wandb.init(
-            entity="vscity",
-            project="fl_bench",
-            group="test2",  # all runs for the experiment in one group
-            name=self.client_id,
-            config=config,
-            id=fl_args.token,
-        )
-        os.environ["https_proxy"] = ""
 
         # Select local TensorBoard writer or event-based writer for streaming
         self.writer = parts.get(
@@ -154,7 +146,7 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
         # set the training-related parameters
         # can be replaced by a config-style block
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.model = ModerateCNN().to(self.device)
+        self.model = eval(self.model_arch + "()").to(self.device)
         self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=0.9)
         self.criterion = torch.nn.CrossEntropyLoss()
         if self.fedproxloss_mu > 0:
@@ -239,9 +231,6 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
 
     def finalize(self, fl_ctx: FLContext):
         # collect threads, close files here
-        os.environ["https_proxy"] = "http://proxy.example.org:3128"
-        self.wandb_runner.finish()
-        os.environ["https_proxy"] = ""
         pass
 
     def local_train(
@@ -285,11 +274,6 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
             self.writer.add_scalar(
                 "train_loss", avg_loss / len(train_loader), current_step
             )
-            os.environ["https_proxy"] = "http://proxy.example.org:3128"
-            wandb.log(
-                {"train_loss": avg_loss / len(train_loader), "step": current_step}
-            )
-            os.environ["https_proxy"] = ""
             if val_freq > 0 and epoch % val_freq == 0:
                 acc = self.local_valid(
                     self.valid_loader,
@@ -448,9 +432,6 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
             metric = correct / float(total)
             if tb_id:
                 self.writer.add_scalar(tb_id, metric, self.epoch_global)
-            os.environ["https_proxy"] = "http://proxy.example.org:3128"
-            wandb.log({"client_val_loss": metric, "epoch_global": self.epoch_global})
-            os.environ["https_proxy"] = ""
 
         return metric
 

@@ -1,0 +1,12 @@
+{
+    "name": "cifar10_central3_num_rounds=1_lr=0.01_epochs=200_model=resnet20_alpha=0.6",
+    "deploy_map": {
+        "cifar10_central3": [
+            "@ALL"
+        ]
+    },
+    "min_clients": 1,
+    "mandatory_clients": [
+        "site-1"
+    ]
+}

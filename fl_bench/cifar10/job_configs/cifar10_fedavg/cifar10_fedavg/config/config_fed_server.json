@@ -1,9 +1,9 @@
 {
     "format_version": 2,
     "min_clients": 10,
-    "num_rounds": 2,
-    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/res/cifar10_splits/cifar10_fedavg_num_rounds=2_lr=0.0001_epochs=2_alpha=1.0_fa2dfb5a-50b6-470c-a079-00c5bb39cf22",
-    "alpha": 1.0,
+    "num_rounds": 150,
+    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/res/cifar10_splits/cifar10_fedavg_num_rounds=150_lr=0.01_epochs=2_model=resnet20_alpha=0.6",
+    "alpha": 0.6,
     "server": {
         "heart_beat_timeout": 600
     },
@@ -20,13 +20,15 @@
             }
         },
         {
+            "id": "model",
+            "path": "{model_path}",
+            "args": {}
+        },
+        {
             "id": "persistor",
             "name": "PTFileModelPersistor",
             "args": {
-                "model": {
-                    "path": "fl_bench.networks.cifar10_nets.ModerateCNN",
-                    "args": {}
-                }
+                "model": "model"
             }
         },
         {
@@ -72,6 +74,16 @@
                 "train_task_name": "train",
                 "train_timeout": 0
             }
+        },
+        {
+            "id": "global_model_eval",
+            "name": "GlobalModelEval",
+            "args": {
+                "model_locator_id": "model_locator",
+                "validation_timeout": 6000,
+                "cleanup_models": true
+            }
         }
-    ]
+    ],
+    "model_path": "fl_bench.networks.cifar10_nets.resnet20"
 }

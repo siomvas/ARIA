@@ -1,13 +1,13 @@
 #!/bin/bash
-#SBATCH -D /path/to/FL_bench/fl_bench/
+#SBATCH -D /path/to/FL_bench
 #SBATCH -J fl
 #SBATCH --partition=gengpu
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 
 #SBATCH --cpus-per-task=4             # Use 4 cores
-#SBATCH --mem=64GB                    # CPU RAM
-#SBATCH --time=04:00:00
+#SBATCH --mem=32GB                    # CPU RAM
+#SBATCH --time=06:00:00
 #SBATCH --gres=gpu:1
 #SBATCH -e %x_%j.e                    # Standard output and error log [%j is replaced with the jobid]
 #SBATCH -o %x_%j.o                    # [%x with the job name], make sure 'results' folder exists.
@@ -18,30 +18,27 @@
 flight env activate conda
 conda activate flare
 
-RESULT_ROOT=../tmp/nvflare/sim_cifar10
+RESULT_ROOT=/path/to/archive/tmp/tofix
 
-echo $PWD
-echo $CUDA_VISIBLE_DEVICES
 # split dataset
-python3 ./utils/cifar10_helpers.py
+python3 fl_bench/utils/cifar10_helpers.py
 
 
-algorithms_dir="${PWD}/cifar10/job_configs"
+algorithms_dir="${PWD}/fl_bench/cifar10/job_configs"
 
-python3 ./utils/set_update_parameters.py -job=${algorithms_dir}/cifar10_fedavg --alpha 1 --lr 1e-3 --num_rounds 10 --epochs 5
+# python3 ${PWD}/fl_bench/utils/set_update_parameters.py -job=${algorithms_dir}/cifar10_fedavg --alpha 0.6 --lr 1e-2 --num_rounds 50 --epochs 4
 
-nvflare simulator cifar10/job_configs/cifar10_fedavg -w ${RESULT_ROOT}/fedavg_alpha_new2 -n 10
-# -gpu $CUDA_VISIBLE_DEVICES
-
+nvflare simulator ${algorithms_dir}/cifar10_fedavg -w ${RESULT_ROOT}/checking_1gpu -n 10 -t 10 -gpu 0
 
 
-# # central
-# ./set_alpha.sh cifar10_central 0.0
-# nvflare simulator job_configs/cifar10_central --workspace ${RESULT_ROOT}/central --threads 1 --n_clients 1
 
-# # FedAvg
-# ./set_alpha.sh cifar10_fedavg 1.0
-# nvflare simulator job_configs/cifar10_fedavg --workspace ${RESULT_ROOT}/fedavg_alpha1.0 --threads 8 --n_clients 8
+# central
+./set_alpha.sh cifar10_central 0.0
+nvflare simulator job_configs/cifar10_central --workspace ${RESULT_ROOT}/central --threads 1 --n_clients 1
+
+# FedAvg
+./set_alpha.sh cifar10_fedavg 1.0
+nvflare simulator job_configs/cifar10_fedavg --workspace ${RESULT_ROOT}/fedavg_alpha1.0 --threads 8 --n_clients 8
 # ./set_alpha.sh cifar10_fedavg 0.5
 # nvflare simulator job_configs/cifar10_fedavg --workspace ${RESULT_ROOT}/fedavg_alpha0.5 --threads 8 --n_clients 8
 
