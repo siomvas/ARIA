@@ -296,3 +296,5 @@ __pycache__
 .pyc
 
 res/cifar10_splits/*
+fl_bench/fl_278534.e
+fl_bench/fl_278534.e
