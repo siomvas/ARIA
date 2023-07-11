@@ -14,8 +14,8 @@
 import copy
 
 import torch
-from pt.learners.cifar10_learner import CIFAR10Learner
-
+from fl_bench.cifar10.pt.learners.cifar10_learner import CIFAR10Learner
+from fl_bench.utils.AltScaffoldHelper import AltScaffoldHelper
 from nvflare.apis.dxo import DXO, DataKind, MetaKey, from_shareable
 from nvflare.apis.fl_constant import ReturnCode
 from nvflare.apis.fl_context import FLContext
@@ -23,16 +23,21 @@ from nvflare.apis.shareable import Shareable, make_reply
 from nvflare.apis.signal import Signal
 from nvflare.app_common.app_constant import AlgorithmConstants, AppConstants
 from nvflare.app_common.pt.pt_scaffold import PTScaffoldHelper, get_lr_values
+import os
+
+CIFAR10_ROOT = os.getenv("CIFAR10_ROOT")
 
 
 class CIFAR10ScaffoldLearner(CIFAR10Learner):
     def __init__(
         self,
-        train_idx_root: str = "./dataset",
+        train_idx_root: str = CIFAR10_ROOT,
+        model_arch: str = "ModerateCNN",
         aggregation_epochs: int = 1,
         lr: float = 1e-2,
         fedproxloss_mu: float = 0.0,
         central: bool = False,
+        save_freq: int = 10,
         analytic_sender_id: str = "analytic_sender",
         batch_size: int = 64,
         num_workers: int = 0,
@@ -61,20 +66,25 @@ class CIFAR10ScaffoldLearner(CIFAR10Learner):
         CIFAR10Learner.__init__(
             self,
             train_idx_root=train_idx_root,
+            model_arch=model_arch,
             aggregation_epochs=aggregation_epochs,
             lr=lr,
+            save_freq=save_freq,
             fedproxloss_mu=fedproxloss_mu,
             central=central,
             analytic_sender_id=analytic_sender_id,
             batch_size=batch_size,
             num_workers=num_workers,
         )
-        self.scaffold_helper = PTScaffoldHelper()
+        self.scaffold_helper = AltScaffoldHelper()
 
     def initialize(self, parts: dict, fl_ctx: FLContext):
         # Initialize super class and SCAFFOLD
         CIFAR10Learner.initialize(self, parts=parts, fl_ctx=fl_ctx)
-        self.scaffold_helper.init(model=self.model)
+        #  HACK: use my own scaffold TODO: This just excludes them here, need to manually add the filter...
+        # and this is only for the obvious exclusions...
+        exclude_vars = ["num_batches_tracked", "attn.relative_position_index"]
+        self.scaffold_helper.init(model=self.model, exclude_vars=exclude_vars)
 
     def local_train(self, fl_ctx, train_loader, model_global, abort_signal: Signal, val_freq: int = 0):
         # local_train with SCAFFOLD steps

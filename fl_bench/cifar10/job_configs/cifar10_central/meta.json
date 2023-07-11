@@ -1,5 +1,5 @@
 {
-    "name": "cifar10_central_num_rounds=1_lr=0.01_epochs=200_model=ModerateCNN_alpha=0.6",
+    "name": "cifar10_central_num_rounds=1_lr=0.001_epochs=200_model=wideresnet_16_8_alpha=0.6",
     "deploy_map": {
         "cifar10_central": [
             "@ALL"

@@ -73,7 +73,7 @@
             }
         }
     ],
-    "model_path": "fl_bench.networks.cifar10_nets.ModerateCNN",
+    "model_path": "fl_bench.networks.cifar10_nets.wideresnet_16_8",
     "alpha": 0.6,
-    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/res/cifar10_splits/cifar10_central_num_rounds=1_lr=0.01_epochs=200_model=ModerateCNN_alpha=0.6"
+    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/res/cifar10_splits/cifar10_central_num_rounds=1_lr=0.001_epochs=200_model=wideresnet_16_8_alpha=0.6"
 }

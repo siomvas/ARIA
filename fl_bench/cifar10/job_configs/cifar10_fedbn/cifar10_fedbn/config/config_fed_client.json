@@ -1,5 +1,6 @@
 {
     "format_version": 2,
+    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/res/cifar10_splits/cifar10_fedbn_num_rounds=250_lr=0.01_epochs=4_model=resnet20_alpha=0.6",
     "executors": [
         {
             "tasks": [
@@ -17,18 +18,32 @@
         }
     ],
     "task_result_filters": [],
-    "task_data_filters": [],
+    "task_data_filters": [
+        {
+            "tasks": [
+                "train"
+            ],
+            "filters": [
+                {
+                    "name": "ExcludeVars",
+                    "args": {
+                        "exclude_vars": "(?:norm)|(?:bn)"
+                    }
+                }
+            ]
+        }
+    ],
     "components": [
         {
             "id": "cifar10-learner",
             "path": "fl_bench.cifar10.pt.learners.cifar10_learner.CIFAR10Learner",
             "args": {
-                "aggregation_epochs": 200,
+                "train_idx_root": "{TRAIN_SPLIT_ROOT}",
+                "aggregation_epochs": 4,
                 "lr": 0.01,
-                "central": true,
-                "model_arch": "MobileNetv2"
+                "model_arch": "resnet20",
+                "save_freq": 2
             }
         }
-    ],
-    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/res/cifar10_splits/cifar10_central2_num_rounds=1_lr=0.01_epochs=200_model=MobileNetv2_alpha=0.6"
+    ]
 }

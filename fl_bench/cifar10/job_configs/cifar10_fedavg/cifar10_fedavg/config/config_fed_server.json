@@ -1,8 +1,8 @@
 {
     "format_version": 2,
     "min_clients": 10,
-    "num_rounds": 150,
-    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/res/cifar10_splits/cifar10_fedavg_num_rounds=150_lr=0.01_epochs=2_model=resnet20_alpha=0.6",
+    "num_rounds": 30,
+    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/res/cifar10_splits/cifar10_fedavg_num_rounds=30_lr=0.01_epochs=10_model=wideresnet_16_8_alpha=0.6",
     "alpha": 0.6,
     "server": {
         "heart_beat_timeout": 600
@@ -44,7 +44,7 @@
         {
             "id": "model_selector",
             "name": "IntimeModelSelector",
-            "args": {}
+            "args": {"weigh_by_local_iter": true}
         },
         {
             "id": "model_locator",
@@ -67,7 +67,7 @@
                 "min_clients": "{min_clients}",
                 "num_rounds": "{num_rounds}",
                 "start_round": 0,
-                "wait_time_after_min_received": 10,
+                "wait_time_after_min_received": 1,
                 "aggregator_id": "aggregator",
                 "persistor_id": "persistor",
                 "shareable_generator_id": "shareable_generator",
@@ -85,5 +85,5 @@
             }
         }
     ],
-    "model_path": "fl_bench.networks.cifar10_nets.resnet20"
+    "model_path": "fl_bench.networks.cifar10_nets.wideresnet_16_8"
 }

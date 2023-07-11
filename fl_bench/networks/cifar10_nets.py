@@ -1,46 +1,11 @@
-# Copyright (c) 2021-2022, NVIDIA CORPORATION.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# Source of SimpleCNN and moderateCNN: https://github.com/IBM/FedMA/blob/master/model.py,
-# SimpleCNN is also from https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
-
-# MIT License
-
-# Copyright (c) 2020 International Business Machines
-
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-
 import torch
 import torch.nn as nn
+from types import SimpleNamespace
 import torch.nn.functional as F
 import torch.nn.init as init
+import timm
+from collections import OrderedDict
+from vit_pytorch import SimpleViT
 
 
 class SimpleCNN(nn.Module):
@@ -62,8 +27,19 @@ class SimpleCNN(nn.Module):
         x = self.fc3(x)
         return x
 
+    def rep_and_out(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        x = torch.flatten(x, 1)  # flatten all dimensions except batch
+        x = F.relu(self.fc1(x))
+        x = self.fc2(x)
+        features = x
+        x = F.relu(x)
+        x = self.fc3(x)
+        return features, x
 
-class ModerateCNN(nn.Module):
+
+class ModerateCNN_moon(nn.Module):
     def __init__(self):
         super(ModerateCNN, self).__init__()
         self.conv_layer = nn.Sequential(
@@ -105,6 +81,13 @@ class ModerateCNN(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.fc_layer(x)
         return x
+    
+    def rep_and_out(self, x):
+        x = self.conv_layer(x)
+        x = self.fc_layer[:-1](x)
+        features = x
+        x = self.fc_layer[-1](x)
+        return features, x
 
 
 # FedSAM
@@ -145,167 +128,216 @@ class ClientModel(nn.Module):
         return x
 
 
-# ViT taken from https://github.com/omihub777/ViT-CIFAR/
-
-class MixUp(object):
-  def __init__(self, alpha=0.1):
-    self.alpha = alpha
-
-  def __call__(self, batch):
-    '''Returns mixed inputs, pairs of targets, and lambda'''
-    x, y = batch
-    lam = np.random.beta(self.alpha, self.alpha)
-    batch_size = x.size(0)
-    index = torch.randperm(batch_size)
-    mixed_x = lam * x + (1 - lam) * x[index, :]
-    y_a, y_b = y, y[index]
-
-    return mixed_x, y_a, y_b, lam
-
-class CutMix(object):
-  def __init__(self, size, beta):
-    self.size = size
-    self.beta = beta
-
-  def __call__(self, batch):
-    img, label = batch
-    rand_img, rand_label = self._shuffle_minibatch(batch)
-    lambda_ = np.random.beta(self.beta,self.beta)
-    r_x = np.random.uniform(0, self.size)
-    r_y = np.random.uniform(0, self.size)
-    r_w = self.size * np.sqrt(1-lambda_)
-    r_h = self.size * np.sqrt(1-lambda_)
-    x1 = int(np.clip(r_x - r_w // 2, a_min=0, a_max=self.size))
-    x2 = int(np.clip(r_x + r_w // 2, a_min=0, a_max=self.size))
-    y1 = int(np.clip(r_y - r_h // 2, a_min=0, a_max=self.size))
-    y2 = int(np.clip(r_y + r_h // 2, a_min=0, a_max=self.size))
-    img[:, :, x1:x2, y1:y2] = rand_img[:, :, x1:x2, y1:y2]
-
-    lambda_ = 1 - (x2-x1)*(y2-y1)/(self.size*self.size)
-    return img, label, rand_label, lambda_
-
-  def _shuffle_minibatch(self, batch):
-    img, label = batch
-    rand_img, rand_label = img.clone(), label.clone()
-    rand_idx = torch.randperm(img.size(0))
-    rand_img, rand_label = rand_img[rand_idx], rand_label[rand_idx]
-    return rand_img, rand_label
-
-class MultiHeadSelfAttention(nn.Module):
-    def __init__(self, feats: int, head: int = 8, dropout: float = 0.0):
-        super(MultiHeadSelfAttention, self).__init__()
-        self.head = head
-        self.feats = feats
-        self.sqrt_d = self.feats**0.5
-
-        self.q = nn.Linear(feats, feats)
-        self.k = nn.Linear(feats, feats)
-        self.v = nn.Linear(feats, feats)
-
-        self.o = nn.Linear(feats, feats)
-        self.dropout = nn.Dropout(dropout)
+# Wide Res Net from SAM repo
 
 
-class TransformerEncoder(nn.Module):
-    def __init__(
-        self, feats: int, mlp_hidden: int, head: int = 8, dropout: float = 0.0
-    ):
-        super(TransformerEncoder, self).__init__()
-        self.la1 = nn.LayerNorm(feats)
-        self.msa = MultiHeadSelfAttention(feats, head=head, dropout=dropout)
-        self.la2 = nn.LayerNorm(feats)
-        self.mlp = nn.Sequential(
-            nn.Linear(feats, mlp_hidden),
-            nn.GELU(),
-            nn.Dropout(dropout),
-            nn.Linear(mlp_hidden, feats),
-            nn.GELU(),
-            nn.Dropout(dropout),
+class BasicUnit(nn.Module):
+    def __init__(self, channels: int, dropout: float):
+        super(BasicUnit, self).__init__()
+        self.block = nn.Sequential(
+            OrderedDict(
+                [
+                    ("0_normalization", nn.BatchNorm2d(channels)),
+                    ("1_activation", nn.ReLU(inplace=True)),
+                    (
+                        "2_convolution",
+                        nn.Conv2d(
+                            channels, channels, (3, 3), stride=1, padding=1, bias=False
+                        ),
+                    ),
+                    ("3_normalization", nn.BatchNorm2d(channels)),
+                    ("4_activation", nn.ReLU(inplace=True)),
+                    ("5_dropout", nn.Dropout(dropout, inplace=True)),
+                    (
+                        "6_convolution",
+                        nn.Conv2d(
+                            channels, channels, (3, 3), stride=1, padding=1, bias=False
+                        ),
+                    ),
+                ]
+            )
         )
 
     def forward(self, x):
-        out = self.msa(self.la1(x)) + x
-        out = self.mlp(self.la2(out)) + out
-        return out
+        return x + self.block(x)
+
+
+class DownsampleUnit(nn.Module):
+    def __init__(
+        self, in_channels: int, out_channels: int, stride: int, dropout: float
+    ):
+        super(DownsampleUnit, self).__init__()
+        self.norm_act = nn.Sequential(
+            OrderedDict(
+                [
+                    ("0_normalization", nn.BatchNorm2d(in_channels)),
+                    ("1_activation", nn.ReLU(inplace=True)),
+                ]
+            )
+        )
+        self.block = nn.Sequential(
+            OrderedDict(
+                [
+                    (
+                        "0_convolution",
+                        nn.Conv2d(
+                            in_channels,
+                            out_channels,
+                            (3, 3),
+                            stride=stride,
+                            padding=1,
+                            bias=False,
+                        ),
+                    ),
+                    ("1_normalization", nn.BatchNorm2d(out_channels)),
+                    ("2_activation", nn.ReLU(inplace=True)),
+                    ("3_dropout", nn.Dropout(dropout, inplace=True)),
+                    (
+                        "4_convolution",
+                        nn.Conv2d(
+                            out_channels,
+                            out_channels,
+                            (3, 3),
+                            stride=1,
+                            padding=1,
+                            bias=False,
+                        ),
+                    ),
+                ]
+            )
+        )
+        self.downsample = nn.Conv2d(
+            in_channels, out_channels, (1, 1), stride=stride, padding=0, bias=False
+        )
 
     def forward(self, x):
-        b, n, f = x.size()
-        q = self.q(x).view(b, n, self.head, self.feats // self.head).transpose(1, 2)
-        k = self.k(x).view(b, n, self.head, self.feats // self.head).transpose(1, 2)
-        v = self.v(x).view(b, n, self.head, self.feats // self.head).transpose(1, 2)
+        x = self.norm_act(x)
+        return self.block(x) + self.downsample(x)
 
-        score = F.softmax(
-            torch.einsum("bhif, bhjf->bhij", q, k) / self.sqrt_d, dim=-1
-        )  # (b,h,n,n)
-        attn = torch.einsum("bhij, bhjf->bihf", score, v)  # (b,n,h,f//h)
-        o = self.dropout(self.o(attn.flatten(2)))
-        return o
 
-# ViT
-class ViT(nn.Module):
+class Block_wide(nn.Module):
     def __init__(
         self,
-        in_c: int = 3,
-        num_classes: int = 10,
-        img_size: int = 32,
-        patch: int = 8,
-        dropout: float = 0.0,
-        num_layers: int = 7,
-        hidden: int = 384,
-        mlp_hidden: int = 384,
-        head: int = 12,
-        is_cls_token: bool = True,
+        in_channels: int,
+        out_channels: int,
+        stride: int,
+        depth: int,
+        dropout: float,
     ):
-        super(ViT, self).__init__()
-        # hidden=384
-
-        self.patch = patch  # number of patches in one row(or col)
-        self.is_cls_token = is_cls_token
-        self.patch_size = img_size // self.patch
-        f = (img_size // self.patch) ** 2 * 3  # 48 # patch vec length
-        num_tokens = (self.patch**2) + 1 if self.is_cls_token else (self.patch**2)
-
-        self.emb = nn.Linear(f, hidden)  # (b, n, f)
-        self.cls_token = (
-            nn.Parameter(torch.randn(1, 1, hidden)) if is_cls_token else None
-        )
-        self.pos_emb = nn.Parameter(torch.randn(1, num_tokens, hidden))
-        enc_list = [
-            TransformerEncoder(
-                hidden, mlp_hidden=mlp_hidden, dropout=dropout, head=head
-            )
-            for _ in range(num_layers)
-        ]
-        self.enc = nn.Sequential(*enc_list)
-        self.fc = nn.Sequential(
-            nn.LayerNorm(hidden), nn.Linear(hidden, num_classes)  # for cls_token
+        super(Block_wide, self).__init__()
+        self.block = nn.Sequential(
+            DownsampleUnit(in_channels, out_channels, stride, dropout),
+            *(BasicUnit(out_channels, dropout) for _ in range(depth))
         )
 
     def forward(self, x):
-        out = self._to_words(x)
-        out = self.emb(out)
-        if self.is_cls_token:
-            out = torch.cat([self.cls_token.repeat(out.size(0), 1, 1), out], dim=1)
-        out = out + self.pos_emb
-        out = self.enc(out)
-        if self.is_cls_token:
-            out = out[:, 0]
-        else:
-            out = out.mean(1)
-        out = self.fc(out)
-        return out
+        return self.block(x)
 
-    def _to_words(self, x):
-        """
-        (b, c, h, w) -> (b, n, f)
-        """
-        out = (
-            x.unfold(2, self.patch_size, self.patch_size)
-            .unfold(3, self.patch_size, self.patch_size)
-            .permute(0, 2, 3, 4, 5, 1)
+
+class WideResNet(nn.Module):
+    def __init__(
+        self,
+        depth: int,
+        width_factor: int,
+        dropout: float = 0.0,
+        in_channels: int = 3,
+        labels: int = 10,
+    ):
+        super(WideResNet, self).__init__()
+
+        self.filters = [
+            16,
+            1 * 16 * width_factor,
+            2 * 16 * width_factor,
+            4 * 16 * width_factor,
+        ]
+        self.block_depth = (depth - 4) // (3 * 2)
+
+        self.f = nn.Sequential(
+            OrderedDict(
+                [
+                    (
+                        "0_convolution",
+                        nn.Conv2d(
+                            in_channels,
+                            self.filters[0],
+                            (3, 3),
+                            stride=1,
+                            padding=1,
+                            bias=False,
+                        ),
+                    ),
+                    (
+                        "1_block",
+                        Block_wide(
+                            self.filters[0],
+                            self.filters[1],
+                            1,
+                            self.block_depth,
+                            dropout,
+                        ),
+                    ),
+                    (
+                        "2_block",
+                        Block_wide(
+                            self.filters[1],
+                            self.filters[2],
+                            2,
+                            self.block_depth,
+                            dropout,
+                        ),
+                    ),
+                    (
+                        "3_block",
+                        Block_wide(
+                            self.filters[2],
+                            self.filters[3],
+                            2,
+                            self.block_depth,
+                            dropout,
+                        ),
+                    ),
+                    ("4_normalization", nn.BatchNorm2d(self.filters[3])),
+                    ("5_activation", nn.ReLU(inplace=True)),
+                    ("6_pooling", nn.AvgPool2d(kernel_size=8)),
+                    ("7_flattening", nn.Flatten()),
+                    (
+                        "8_classification",
+                        nn.Linear(in_features=self.filters[3], out_features=labels),
+                    ),
+                ]
+            )
         )
-        out = out.reshape(x.size(0), self.patch**2, -1)
-        return out
+
+        self._initialize()
+
+    def _initialize(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(
+                    m.weight.data, mode="fan_in", nonlinearity="relu"
+                )
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+            elif isinstance(m, nn.Linear):
+                m.weight.data.zero_()
+                m.bias.data.zero_()
+
+    def forward(self, x):
+        return self.f(x)
+
+    def rep_and_out(self, x):
+        x = self.f[:-1](x)
+        features = x
+        x = self.f[-1](x)
+        return features, x
+
+
+def wideresnet_16_8_moon():
+    return WideResNet(depth=16, width_factor=8, dropout=0, in_channels=3, labels=10)
 
 
 # MobileNet from kuangliu
@@ -341,16 +373,16 @@ class Block(nn.Module):
         self.shortcut = nn.Sequential()
         if stride == 1 and in_planes != out_planes:
             self.shortcut = nn.Sequential(
-                nn.Conv2d(
-                    in_planes,
-                    out_planes,
-                    kernel_size=1,
-                    stride=1,
-                    padding=0,
-                    bias=False,
-                ),
-                nn.BatchNorm2d(out_planes),
-            )
+                OrderedDict(
+                [
+                    ('short_conv', nn.Conv2d(in_planes,
+                                             out_planes,
+                                             kernel_size=1,
+                                             stride=1,
+                                             padding=0,
+                                             bias=False)), 
+                    ('short_bn', nn.BatchNorm2d(out_planes))
+                ]))
 
     def forward(self, x):
         out = F.relu(self.bn1(self.conv1(x)))
@@ -374,7 +406,6 @@ class MobileNetv2(nn.Module):
 
     def __init__(self, num_classes=10):
         super(MobileNetv2, self).__init__()
-        # NOTE: change conv1 stride 2 -> 1 for CIFAR10
         self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(32)
         self.layers = self._make_layers(in_planes=32)
@@ -409,12 +440,22 @@ class MobileNetv2(nn.Module):
 
         out = self.classifier(features)
         if return_features:
-            return out, features
+            return features, out
         else:
             return out
 
+    def rep_and_out(self, x):
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.layers(out)
+        out = F.relu(self.bn2(self.conv2(out)))
+        out = self.avg_pool2d(out)
+        out = out.view(out.size(0), -1)
+        features = out
+        out = self.classifier(out)
+        return features, out
 
-def mobilenetv2(num_classes):
+
+def mobilenetv2_moon(num_classes):
     return MobileNetv2(num_classes=num_classes)
 
 
@@ -466,14 +507,12 @@ class BasicBlock(nn.Module):
                 )
             elif option == "B":
                 self.shortcut = nn.Sequential(
-                    nn.Conv2d(
-                        in_planes,
-                        self.expansion * planes,
-                        kernel_size=1,
-                        stride=stride,
-                        bias=False,
-                    ),
-                    nn.BatchNorm2d(self.expansion * planes),
+                    OrderedDict([
+                        ('short_conv',
+                         nn.Conv2d(in_planes, self.expansion * planes,
+                                   kernel_size=1, stride=stride, bias=False)),
+                        ('short_norm', nn.BatchNorm2d(self.expansion * planes))
+                        ])
                 )
 
     def forward(self, x):
@@ -521,6 +560,17 @@ class ResNet(nn.Module):
         else:
             return out
 
+    def rep_and_out(self, x):
+        out = F.relu(self.bn1(self.conv1(x)))
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = F.avg_pool2d(out, out.size()[3])
+        out = out.view(out.size(0), -1)
+        features = out
+        out = self.classifier(out)
+        return out, features
+
 
 # This is a wider version of resnet, e.g., resnet18.
 class ResNetWider(nn.Module):
@@ -529,7 +579,7 @@ class ResNetWider(nn.Module):
         self.in_planes = 64
 
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(64)
+        self.norm1 = nn.BatchNorm2d(64)
         self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
@@ -545,7 +595,7 @@ class ResNetWider(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x, return_features=False):
-        out = F.relu(self.bn1(self.conv1(x)))
+        out = F.relu(self.norm1(self.conv1(x)))
         out = self.layer1(out)
         out = self.layer2(out)
         out = self.layer3(out)
@@ -559,8 +609,20 @@ class ResNetWider(nn.Module):
         else:
             return out
 
+    def rep_and_out(self, x):
+        out = F.relu(self.norm1(self.conv1(x)))
+        out = self.layer1(out)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+        out = F.avg_pool2d(out, 4)
+        out = out.view(out.size(0), -1)
+        features = out
+        out = self.classifier(out)
+        return out, features
 
-def resnet20(num_classes=10):
+
+def resnet20_moon(num_classes=10):
     return ResNet(BasicBlock, [3, 3, 3], num_classes=num_classes)
 
 
@@ -568,5 +630,236 @@ def resnet32(num_classes=10):
     return ResNet(BasicBlock, [5, 5, 5], num_classes=num_classes)
 
 
-def resnet18(num_classes=10):
+def resnet18_moon(num_classes=10):
     return ResNetWider(BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
+
+
+# DenseNet from pytorch lightning
+act_fn_by_name = {
+    "tanh": nn.Tanh,
+    "relu": nn.ReLU,
+    "leakyrelu": nn.LeakyReLU,
+    "gelu": nn.GELU,
+}
+
+
+class DenseLayer(nn.Module):
+    def __init__(self, c_in, bn_size, growth_rate, act_fn):
+        """
+        Inputs:
+            c_in - Number of input channels
+            bn_size - Bottleneck size (factor of growth rate) for the output of the 1x1 convolution. Typically between 2 and 4.
+            growth_rate - Number of output channels of the 3x3 convolution
+            act_fn - Activation class constructor (e.g. nn.ReLU)
+        """
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.BatchNorm2d(c_in),
+            act_fn(),
+            nn.Conv2d(c_in, bn_size * growth_rate, kernel_size=1, bias=False),
+            nn.BatchNorm2d(bn_size * growth_rate),
+            act_fn(),
+            nn.Conv2d(
+                bn_size * growth_rate, growth_rate, kernel_size=3, padding=1, bias=False
+            ),
+        )
+
+    def forward(self, x):
+        out = self.net(x)
+        out = torch.cat([out, x], dim=1)
+        return out
+
+
+class DenseBlock(nn.Module):
+    def __init__(self, c_in, num_layers, bn_size, growth_rate, act_fn):
+        """
+        Inputs:
+            c_in - Number of input channels
+            num_layers - Number of dense layers to apply in the block
+            bn_size - Bottleneck size to use in the dense layers
+            growth_rate - Growth rate to use in the dense layers
+            act_fn - Activation function to use in the dense layers
+        """
+        super().__init__()
+        layers = []
+        for layer_idx in range(num_layers):
+            # Input channels are original plus the feature maps from previous layers
+            layer_c_in = c_in + layer_idx * growth_rate
+            layers.append(
+                DenseLayer(
+                    c_in=layer_c_in,
+                    bn_size=bn_size,
+                    growth_rate=growth_rate,
+                    act_fn=act_fn,
+                )
+            )
+        self.block = nn.Sequential(*layers)
+
+    def forward(self, x):
+        out = self.block(x)
+        return out
+
+
+class TransitionLayer(nn.Module):
+    def __init__(self, c_in, c_out, act_fn):
+        super().__init__()
+        self.transition = nn.Sequential(
+            OrderedDict([
+                ("trans_norm", nn.BatchNorm2d(c_in)),
+                ("trans_act", act_fn()),
+                ("trans_conv", nn.Conv2d(c_in, c_out, kernel_size=1, bias=False)),
+                ("trans_pool", nn.AvgPool2d(kernel_size=2, stride=2))
+            ])
+        )
+
+    def forward(self, x):
+        return self.transition(x)
+
+
+class DenseNet(nn.Module):
+    def __init__(
+        self,
+        num_classes=10,
+        num_layers=[6, 6, 6, 6],
+        bn_size=2,
+        growth_rate=16,
+        act_fn_name="relu",
+        **kwargs
+    ):
+        super().__init__()
+        self.hparams = SimpleNamespace(
+            num_classes=num_classes,
+            num_layers=num_layers,
+            bn_size=bn_size,
+            growth_rate=growth_rate,
+            act_fn_name=act_fn_name,
+            act_fn=act_fn_by_name[act_fn_name],
+        )
+        self._create_network()
+        self._init_params()
+
+    def _create_network(self):
+        c_hidden = (
+            self.hparams.growth_rate * self.hparams.bn_size
+        )  # The start number of hidden channels
+
+        # A first convolution on the original image to scale up the channel size
+        self.input_net = nn.Sequential(
+            # No batch norm or activation function as done inside the Dense layers
+            nn.Conv2d(3, c_hidden, kernel_size=3, padding=1)
+        )
+
+        # Creating the dense blocks, eventually including transition layers
+        blocks = []
+        for block_idx, num_layers in enumerate(self.hparams.num_layers):
+            blocks.append(
+                DenseBlock(
+                    c_in=c_hidden,
+                    num_layers=num_layers,
+                    bn_size=self.hparams.bn_size,
+                    growth_rate=self.hparams.growth_rate,
+                    act_fn=self.hparams.act_fn,
+                )
+            )
+            c_hidden = (
+                c_hidden + num_layers * self.hparams.growth_rate
+            )  # Overall output of the dense block
+            if (
+                block_idx < len(self.hparams.num_layers) - 1
+            ):  # Don't apply transition layer on last block
+                blocks.append(
+                    TransitionLayer(
+                        c_in=c_hidden, c_out=c_hidden // 2, act_fn=self.hparams.act_fn
+                    )
+                )
+                c_hidden = c_hidden // 2
+
+        self.blocks = nn.Sequential(*blocks)
+
+        # Mapping to classification output
+        self.output_net = nn.Sequential(
+            OrderedDict([
+                ("out_norm", nn.BatchNorm2d(c_hidden)),
+                ("out_act", self.hparams.act_fn()),
+                ("out_pool", nn.AdaptiveAvgPool2d((1, 1))),
+                ("out_flatten", nn.Flatten()),
+                ("out_linear", nn.Linear(c_hidden, self.hparams.num_classes))
+            ])
+        )
+
+    def _init_params(self):
+        # Based on our discussion in Tutorial 4, we should initialize the
+        # convolutions according to the activation function
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, nonlinearity=self.hparams.act_fn_name)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+    def forward(self, x):
+        x = self.input_net(x)
+        x = self.blocks(x)
+        x = self.output_net(x)
+        return x
+    
+    def rep_and_out(self, x):
+        x = self.input_net(x)
+        x = self.blocks(x)
+        x = self.output_net[:-1](x)
+        features = x
+        x = self.output_net[-1](x)
+        return features, x
+
+
+def densenet_16_moon():
+    return DenseNet(num_layers=[6, 6, 6])
+
+
+def swin():
+    return timm.models.SwinTransformer(
+        img_size=32,
+        patch_size=4,
+        num_classes=10,
+        embed_dim=96,
+        depths=(2, 2, 6, 2),
+        num_heads=(3, 6, 12, 24),
+        head_dim=None,
+        window_size=4,
+        mlp_ratio=4.,
+        qkv_bias=True,
+        drop_rate=0.,
+        proj_drop_rate=0.,
+        attn_drop_rate=0.,
+        drop_path_rate=0.1
+    )
+
+
+def focalnet():
+    return timm.models.FocalNet(
+        num_classes=10
+    )
+
+
+def simple_vit_quarter():
+    return SimpleViT(
+        image_size=32,
+        patch_size=4,
+        num_classes=10,
+        dim=256,
+        depth=3,
+        heads=8,
+        mlp_dim=512
+    )
+
+
+def simple_vit_half():
+    return SimpleViT(
+        image_size=32,
+        patch_size=4,
+        num_classes=10,
+        dim=512,
+        depth=3,
+        heads=8,
+        mlp_dim=1024
+    )

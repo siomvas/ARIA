@@ -1,22 +1,7 @@
-# Copyright (c) 2021, NVIDIA CORPORATION.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import argparse
 import json
 import os
 import uuid
-
 
 def read_json(filename):
     assert os.path.isfile(filename), f"{filename} does not exist!"
@@ -32,6 +17,7 @@ def write_json(data, filename):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument("-dataset", type=str, choices=['cifar10', 'prostate_2d'], default='cifar10')
     parser.add_argument("-job", type=str, help="Path to job config.")
     parser.add_argument(
         "--train_split_root",
@@ -49,11 +35,24 @@ def main():
         "Assumes central training.",
     )
     parser.add_argument(
+        "-learner",
+        type=str,
+        default='baseline',
+        choices=['baseline', 'adamw', 'savemore', 'scaffold']
+    )
+    parser.add_argument(
         "--model_name",
         type=str,
         default=argparse.SUPPRESS,
         help="name of model",
     )
+    parser.add_argument(
+        "-save_freq",
+        type=int,
+        default= 10,
+        help="Saving frequency for local models. Creates num_rounds // save_freq * n_clients models",
+    )
+
     parser.add_argument(
         "--num_rounds",
         type=int,
@@ -80,6 +79,18 @@ def main():
     client_config = read_json(client_config_filename)
     server_config = read_json(server_config_filename)
     meta_config = read_json(meta_config_filename)
+
+    if "learner" in args and args.dataset == "cifar10":
+        client_config = read_json(client_config_filename)
+        dictt = {
+            "baseline": "fl_bench.cifar10.pt.learners.cifar10_learner.CIFAR10Learner",
+            "adamw": "fl_bench.cifar10.pt.learners.cifar10_learner_adamw.CIFAR10Learner_AdamW",
+            "savemore": "fl_bench.cifar10.pt.learners.cifar10_learner_savemore.CIFAR10Learner_savemore",
+            "scaffold": "fl_bench.cifar10.pt.learners.cifar10_scaffold_learner.CIFAR10ScaffoldLearner",
+        }
+        client_config["components"][0]["path"] = dictt[args.learner]
+        print(f"Setting learner to {dictt[args.learner]}")
+        write_json(client_config, client_config_filename)
 
     if "num_rounds" in args:
         # update federated rounds
@@ -125,23 +136,35 @@ def main():
         server_config = read_json(server_config_filename)
         meta_config = read_json(meta_config_filename)
         print(f"Setting model name to {args.model_name}")
-        token = str(uuid.uuid4())
         job_name = f"{job_name}_model={args.model_name}"
-        client_config["components"][0]["args"]["model_arch"] = args.model_name
-        server_config["model_path"] = (
-            "fl_bench.networks.cifar10_nets." + args.model_name
-        )
+        if args.dataset == 'cifar10':
+            client_config["components"][0]["args"]["model_arch"] = args.model_name
+            server_config["model_path"] = (
+                "fl_bench.networks.cifar10_nets." + args.model_name
+            )
+        elif args.dataset == 'prostate_2d':
+            client_config["components"][0]["args"]["model_arch"] = args.model_name
+            server_config["model_path"] = (
+                "fl_bench.networks.prostate2d_nets." + args.model_name
+            )
         meta_config["name"] = job_name
         write_json(client_config, client_config_filename)
         write_json(server_config, server_config_filename)
         write_json(meta_config, meta_config_filename)
+
+    if "save_freq" in args:
+        # update save frequency
+        client_config = read_json(client_config_filename)
+        meta_config = read_json(meta_config_filename)
+        print(f"Setting save_freq to {args.save_freq}")
+        client_config["components"][0]["args"]["save_freq"] = args.save_freq
+        write_json(client_config, client_config_filename)
 
     if "alpha" in args:
         # update alpha and split data dir
         print(f"Updating {meta_config_filename} to alpha={args.alpha}")
 
         if args.alpha > 0.0:
-            token = str(uuid.uuid4())
             job_name = f"{job_name}_alpha={args.alpha}"
             server_config["alpha"] = args.alpha
             meta_config["name"] = job_name

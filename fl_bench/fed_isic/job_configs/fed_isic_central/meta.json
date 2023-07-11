@@ -1,0 +1,9 @@
+{
+    "name": "fed_isic_central_efficientnet_250_0.01_1_fed_isic_base",
+    "deploy_map": {
+        "fed_isic_central": [
+            "@ALL"
+        ]
+    },
+    "min_clients": 1
+}

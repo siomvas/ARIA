@@ -1,21 +1,50 @@
 {
     "format_version": 2,
-    "min_clients": 1,
-    "num_rounds": 1,
+    "min_clients": 10,
+    "num_rounds": 250,
+    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/res/cifar10_splits/cifar10_fedbn_num_rounds=250_lr=0.01_epochs=4_model=resnet20_alpha=0.6",
+    "alpha": 0.6,
     "server": {
         "heart_beat_timeout": 600
     },
+    "task_result_filters": [
+        {
+            "tasks": [
+                "train",
+                "submit_model",
+                "validate"
+            ],
+            "filters": [
+                {
+                    "name": "ExcludeVars",
+                    "args": {
+                        "exclude_vars": "(?:norm)|(?:bn)"
+                    }
+                }
+            ]
+        }
+    ],
     "task_data_filters": [],
-    "task_result_filters": [],
     "components": [
+        {
+            "id": "data_splitter",
+            "path": "fl_bench.utils.cifar10_helpers.Cifar10DataSplitter",
+            "args": {
+                "split_dir": "{TRAIN_SPLIT_ROOT}",
+                "num_sites": "{min_clients}",
+                "alpha": "{alpha}"
+            }
+        },
+        {
+            "id": "model",
+            "path": "{model_path}",
+            "args": {}
+        },
         {
             "id": "persistor",
             "name": "PTFileModelPersistor",
             "args": {
-                "model": {
-                    "path": "{model_path}",
-                    "args": {}
-                }
+                "model": "model"
             }
         },
         {
@@ -63,17 +92,14 @@
             }
         },
         {
-            "id": "cross_site_model_eval",
-            "name": "CrossSiteModelEval",
+            "id": "global_model_eval",
+            "name": "GlobalModelEval",
             "args": {
                 "model_locator_id": "model_locator",
-                "submit_model_timeout": 600,
                 "validation_timeout": 6000,
                 "cleanup_models": true
             }
         }
     ],
-    "model_path": "fl_bench.networks.cifar10_nets.resnet20",
-    "alpha": 0.6,
-    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/res/cifar10_splits/cifar10_central3_num_rounds=1_lr=0.01_epochs=200_model=resnet20_alpha=0.6"
+    "model_path": "fl_bench.networks.cifar10_nets.resnet20"
 }

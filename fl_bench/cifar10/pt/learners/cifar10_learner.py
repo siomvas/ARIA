@@ -36,8 +36,6 @@ from nvflare.app_common.abstract.learner_spec import Learner
 from nvflare.app_common.app_constant import AppConstants, ModelName, ValidateType
 from nvflare.app_common.pt.pt_fedproxloss import PTFedProxLoss
 
-import wandb
-
 
 CIFAR10_ROOT = os.getenv("CIFAR10_ROOT")
 
@@ -51,6 +49,7 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
         lr: float = 1e-2,
         fedproxloss_mu: float = 0.0,
         central: bool = False,
+        save_freq: int = 10,
         analytic_sender_id: str = "analytic_sender",
         batch_size: int = 64,
         num_workers: int = 0,
@@ -374,10 +373,13 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
         for name in global_weights:
             if name not in local_weights:
                 continue
-            model_diff[name] = local_weights[name].cpu().numpy() - global_weights[name]
+            model_diff[name] = np.subtract(local_weights[name].cpu().numpy(), global_weights[name], dtype=np.float32)
             if np.any(np.isnan(model_diff[name])):
                 self.system_panic(f"{name} weights became NaN...", fl_ctx)
                 return make_reply(ReturnCode.EXECUTION_EXCEPTION)
+
+        # flush the tb writer
+        self.writer.flush()
 
         # build the shareable
         dxo = DXO(data_kind=DataKind.WEIGHT_DIFF, data=model_diff)

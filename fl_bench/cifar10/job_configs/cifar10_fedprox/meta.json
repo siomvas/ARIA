@@ -1,9 +1,9 @@
 {
-  "name": "cifar10_fedprox",
-  "deploy_map": {
-    "cifar10_fedprox": [
-      "@ALL"
-    ]
-  },
-  "min_clients": 8
+    "name": "cifar10_fedprox_num_rounds=100_lr=0.01_epochs=4_model=focalnet_alpha=0.6",
+    "deploy_map": {
+        "cifar10_fedprox": [
+            "@ALL"
+        ]
+    },
+    "min_clients": 10
 }

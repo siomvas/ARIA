@@ -1,9 +1,9 @@
 {
-  "name": "cifar10_fedopt",
-  "deploy_map": {
-    "cifar10_fedopt": [
-      "@ALL"
-    ]
-  },
-  "min_clients": 8
+    "name": "cifar10_fedopt_num_rounds=50_lr=0.001_epochs=20_model=swin_alpha=0.6",
+    "deploy_map": {
+        "cifar10_fedopt": [
+            "@ALL"
+        ]
+    },
+    "min_clients": 10
 }

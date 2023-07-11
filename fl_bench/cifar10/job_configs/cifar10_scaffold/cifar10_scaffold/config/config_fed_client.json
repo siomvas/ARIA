@@ -1,6 +1,6 @@
 {
     "format_version": 2,
-    "TRAIN_SPLIT_ROOT": "/tmp/cifar10_splits",
+    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/res/cifar10_splits/cifar10_scaffold_num_rounds=250_lr=0.01_epochs=4_model=swin_alpha=0.6",
     "executors": [
         {
             "tasks": [
@@ -22,10 +22,12 @@
     "components": [
         {
             "id": "cifar10-learner",
-            "path": "pt.learners.cifar10_scaffold_learner.CIFAR10ScaffoldLearner",
+            "path": "fl_bench.cifar10.pt.learners.cifar10_scaffold_learner.CIFAR10ScaffoldLearner",
             "args": {
                 "train_idx_root": "{TRAIN_SPLIT_ROOT}",
                 "aggregation_epochs": 4,
+                "model_arch": "swin",
+                "save_freq": 2,
                 "lr": 0.01
             }
         }

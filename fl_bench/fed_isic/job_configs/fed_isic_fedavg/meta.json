@@ -1,0 +1,9 @@
+{
+    "name": "fed_isic_fedavg_efficientnet_420_0.01_4_fed_isic_base",
+    "deploy_map": {
+        "isic_fedavg": [
+            "@ALL"
+        ]
+    },
+    "min_clients": 6
+}
