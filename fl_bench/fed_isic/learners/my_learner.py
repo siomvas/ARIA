@@ -57,21 +57,26 @@ class MyLearner(Learner):
                 epoch,
                 abort_signal
             )
+            self.model.train()
             for i, batch_data in enumerate(self.data_module.train_dataloader):
                 self.fl_callback.on_train_batch_start(abort_signal)
                 inputs = batch_data["image"].to(self.device)
                 labels = batch_data["label"].to(self.device)
+                self.optimizer.zero_grad()
                 outputs = self.model(inputs)
                 loss = self.criterion(outputs, labels)
                 if self.fedprox_mu > 0:
                     prox_loss = self.criterion_prox(self.model, self.model_global)
                     loss += prox_loss
-                self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
-                current_step = self.t_len * self.epoch_global + i
-                self.writer.add_scalar("train_loss", loss.item(), current_step)
+            if self.scheduler:
+                self.scheduler.step()
+
+            current_step = self.t_len * self.epoch_global + i
+            self.writer.add_scalar("train_loss", loss.item(), current_step)
+            self.log_info(fl_ctx, f"Epoch {epoch} finished. Loss: {loss.item()}")
 
         self.epoch_of_start_time += self.epochs
 

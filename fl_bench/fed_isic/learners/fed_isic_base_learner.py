@@ -1,20 +1,20 @@
 import json
 import os
-
 import torch
 from dotenv import load_dotenv
 from monai.inferers.inferer import SimpleInferer
 from nvflare.app_common.app_constant import AppConstants
 from nvflare.app_opt.pt.fedproxloss import PTFedProxLoss
 from sklearn.metrics import balanced_accuracy_score
-from torch.optim import SGD, Adam, AdamW
+import torch.optim
 
-load_dotenv()
 from fl_bench.fed_isic.learners.my_learner import MyLearner
 from fl_bench.networks.fed_isic_nets import *
 from fl_bench.utils.FedIsicDM import FedIsicDataModule
 from fl_bench.utils.PTMOONLoss import PTMOONLoss
 from fl_bench.utils.WeightedFocalLoss import WeightedFocalLoss
+
+load_dotenv()
 
 
 class FedIsicLearner(MyLearner):
@@ -38,16 +38,19 @@ class FedIsicLearner(MyLearner):
         self.model_name = self.config_info["model_name"]
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         if self.device == "cpu":
-            raise ValueError(f"No GPU detected")
+            raise ValueError("No GPU detected")
         self.model = eval(self.model_name + "()").to(self.device)
         self.central = self.config_info["central"]
         optimizer_dict = self.config_info["optimizer_args"]
         optimizer_class = optimizer_dict.pop('class', None)
         assert optimizer_class in ['SGD', 'Adam', 'AdamW']
-        self.optimizer = eval(optimizer_class)(
+        self.optimizer = eval(f'torch.optim.{optimizer_class}')(
             self.model.parameters(),
             lr=self.lr,
             **optimizer_dict)
+        self.scheduler = torch.optim.lr_scheduler.MultiStepLR(
+            self.optimizer, milestones=[3, 5, 7, 9, 11, 13, 15, 17], gamma=0.5
+        )
         self.fedprox_mu = self.config_info["fedprox_mu"]
         self.moon_mu = self.config_info["moon_mu"]
 

@@ -3,7 +3,7 @@ import torch.nn as nn
 from monai.networks.nets.efficientnet import EfficientNetBN
 
 
-def efficientnet(pretrained=False, norm="batch"):
+def efficientnet(pretrained=True, norm="batch"):
 
     assert norm in ["batch", "layer", "group", "instance"]
 
