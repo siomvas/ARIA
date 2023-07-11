@@ -298,11 +298,3 @@ __pycache__
 .pyc
 
 res/cifar10_splits/*
-fl_bench/fl_278534.e
-fl_bench/fl_278534.e
-fl_bench/cifar10/job_configs/cifar10_central2/meta.json
-fl_bench/cifar10/job_configs/cifar10_central2/cifar10_central2/config/config_fed_client.json
-fl_bench/cifar10/job_configs/cifar10_central2/cifar10_central2/config/config_fed_server.json
-fl_bench/cifar10/job_configs/cifar10_central3/meta.json
-fl_bench/cifar10/job_configs/cifar10_central3/cifar10_central3/config/config_fed_client.json
-fl_bench/cifar10/job_configs/cifar10_central3/cifar10_central3/config/config_fed_server.json
