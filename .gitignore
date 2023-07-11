@@ -1,7 +1,9 @@
 #Splits and job outputs
 res/
 fl_bench/*.e
-fl_bench/*.o
+fl_bench/*
+*.e
+*.o
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
