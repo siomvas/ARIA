@@ -70,11 +70,11 @@ class MyLearner(Learner):
                     loss += prox_loss
                 loss.backward()
                 self.optimizer.step()
+                current_step = self.t_len * self.epoch_global + i
 
             if self.scheduler:
                 self.scheduler.step()
 
-            current_step = self.t_len * self.epoch_global + i
             self.writer.add_scalar("train_loss", loss.item(), current_step)
             self.log_info(fl_ctx, f"Epoch {epoch} finished. Loss: {loss.item()}")
 

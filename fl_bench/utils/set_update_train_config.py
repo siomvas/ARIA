@@ -3,6 +3,7 @@ import json
 import os
 import ast
 
+from nvflare.app_opt.pt.fedopt import 
 
 def read_json(filename):
     assert os.path.isfile(filename), f"{filename} does not exist!"
@@ -81,10 +82,10 @@ def main():
 
     job_name = os.path.basename(args.job)
     client_config_filename = os.path.join(
-        args.job, job_name, "config", "config_client.json"
+        args.job, job_name, "config", "config_fed_client.json"
     )
     server_config_filename = os.path.join(
-        args.job, job_name, "config", "config_server.json"
+        args.job, job_name, "config", "config_fed_server.json"
     )
     train_config_filename = os.path.join(
         args.job, job_name, "config", "config_train.json"

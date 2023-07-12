@@ -41,6 +41,7 @@ class FedCallback():
         learner.log_info(
             fl_ctx,
             f"{learner.client_id}:{epoch+1}/{learner.epochs}(lr={learner.lr})")
+        learner.epoch_global = learner.epoch_of_start_time + epoch
 
     def on_validation_batch_start(
         self,
