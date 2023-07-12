@@ -3,7 +3,6 @@ import json
 import os
 import ast
 
-from nvflare.app_opt.pt.fedopt import 
 
 def read_json(filename):
     assert os.path.isfile(filename), f"{filename} does not exist!"
