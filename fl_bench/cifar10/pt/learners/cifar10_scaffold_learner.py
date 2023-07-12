@@ -125,7 +125,7 @@ class CIFAR10ScaffoldLearner(CIFAR10Learner):
                 self.writer.add_scalar("train_loss", loss.item(), current_step)
 
             if val_freq > 0 and epoch % val_freq == 0:
-                acc = self.local_valid(self.valid_loader, abort_signal, tb_id="val_acc_local_model", fl_ctx=fl_ctx)
+                acc = self.local_valid(self.valid_loader, abort_signal, tb_id="val_metric_local_model", fl_ctx=fl_ctx)
                 if acc > self.best_acc:
                     self.save_model(is_best=True)
 

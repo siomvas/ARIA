@@ -1,4 +1,4 @@
-RESULT_ROOT="/path/to/Results/FedIsic"
+RESULT_ROOT="/path/to/Results/FedOpt"
 algo_dir="${PWD}/fl_bench/fed_isic/job_configs"
 
 python fl_bench/utils/set_update_train_config.py \

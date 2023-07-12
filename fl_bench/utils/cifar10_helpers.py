@@ -116,7 +116,7 @@ class Cifar10DataSplitter(FLComponent):
     def load_cifar10_data(self):
         # download data
         train_dataset = datasets.CIFAR10(
-            root=os.getenv("CIFAR10_ROOT"), train=True, download=False
+            root=os.getenv("CIFAR10_ROOT"), train=True, download=True
         )
 
         # only training label is needed for doing split

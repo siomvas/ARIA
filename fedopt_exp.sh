@@ -20,15 +20,15 @@ conda activate flare
 RESULT_ROOT=/path/to/localscratch/JulyTasks
 algorithms_dir="${PWD}/fl_bench/cifar10/job_configs"
 
-# python3 fl_bench/utils/set_update_parameters.py \
-# -job fl_bench/cifar10/job_configs/cifar10_fedopt \
-# -dataset cifar10 \
-# --alpha 0.6 \
-# --num_rounds 50 \
-# --lr 0.01 \
-# --epochs 2 \
-# --model_name resnet20
-# nvflare simulator ${algorithms_dir}/cifar10_fedopt -w ${RESULT_ROOT}/resnet20 -n 10 -t 10 -gpu 0
+python3 fl_bench/utils/set_update_parameters.py \
+-job fl_bench/cifar10/job_configs/cifar10_fedopt \
+-dataset cifar10 \
+--alpha 0.6 \
+--num_rounds 25 \
+--lr 0.03 \
+--epochs 4 \
+--model_name resnet20
+nvflare simulator ${algorithms_dir}/cifar10_fedopt -w ${RESULT_ROOT} -n 10 -t 10 -gpu 0,1,0,1,0,1,0,1,0,1
 
 
 

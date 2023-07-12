@@ -4,10 +4,11 @@
     "moon_mu": 0.0,
     "batch_size": 64,
     "model_name": "efficientnet_scratch",
-    "epochs": 20,
+    "epochs": 1,
     "central": true,
     "optimizer_args": {
-        "class": "Adam"
+        "class": "SGD",
+        "momentum": 0.9
     },
     "save_freq": 10
 }

@@ -277,7 +277,7 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
                 acc = self.local_valid(
                     self.valid_loader,
                     abort_signal,
-                    tb_id="val_acc_local_model",
+                    tb_id="val_metric_local_model",
                     fl_ctx=fl_ctx,
                 )
                 if acc > self.best_acc:
@@ -355,11 +355,11 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
 
         # perform valid after local train
         acc = self.local_valid(
-            self.valid_loader, abort_signal, tb_id="val_acc_local_model", fl_ctx=fl_ctx
+            self.valid_loader, abort_signal, tb_id="val_metric_local_model", fl_ctx=fl_ctx
         )
         if abort_signal.triggered:
             return make_reply(ReturnCode.TASK_ABORTED)
-        self.log_info(fl_ctx, f"val_acc_local_model: {acc:.4f}")
+        self.log_info(fl_ctx, f"val_metric_local_model: {acc:.4f}")
 
         # save model
         self.save_model(is_best=False)
@@ -490,12 +490,12 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
             global_acc = self.local_valid(
                 self.valid_loader,
                 abort_signal,
-                tb_id="val_acc_global_model",
+                tb_id="val_metric_global_model",
                 fl_ctx=fl_ctx,
             )
             if abort_signal.triggered:
                 return make_reply(ReturnCode.TASK_ABORTED)
-            self.log_info(fl_ctx, f"val_acc_global_model ({model_owner}): {global_acc}")
+            self.log_info(fl_ctx, f"val_metric_global_model ({model_owner}): {global_acc}")
 
             return DXO(
                 data_kind=DataKind.METRICS,
@@ -510,14 +510,14 @@ class CIFAR10Learner(Learner):  # also supports CIFAR10ScaffoldLearner
                 return make_reply(ReturnCode.TASK_ABORTED)
             self.log_info(fl_ctx, f"training acc ({model_owner}): {train_acc}")
 
-            val_acc = self.local_valid(self.valid_loader, abort_signal)
+            val_metric = self.local_valid(self.valid_loader, abort_signal)
             if abort_signal.triggered:
                 return make_reply(ReturnCode.TASK_ABORTED)
-            self.log_info(fl_ctx, f"validation acc ({model_owner}): {val_acc}")
+            self.log_info(fl_ctx, f"validation acc ({model_owner}): {val_metric}")
 
             self.log_info(fl_ctx, "Evaluation finished. Returning shareable")
 
-            val_results = {"train_accuracy": train_acc, "val_accuracy": val_acc}
+            val_results = {"train_accuracy": train_acc, "val_accuracy": val_metric}
 
             metric_dxo = DXO(data_kind=DataKind.METRICS, data=val_results)
             return metric_dxo.to_shareable()
