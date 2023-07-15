@@ -8,4 +8,4 @@ python fl_bench/utils/set_update_train_config.py \
 -e 20 \
 -lr 5e-4
 
-nvflare simulator ${algorithms_dir}/fed_isic_central -w ${RESULT_ROOT}/FromScratch -n 1 -t 1 -gpu 1
+nvflare simulator ${algorithms_dir}/fed_isic_fedavg -w ${RESULT_ROOT}/FedAvg -n 6 -t 6 -gpu 0,1,0,1,0,1
