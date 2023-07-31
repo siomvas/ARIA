@@ -1,6 +1,6 @@
 {
     "format_version": 2,
-    "min_clients": 1,
+    "min_clients": 6,
     "num_rounds": 20,
     "model_path": "fl_bench.networks.fed_isic_nets.efficientnet",
     "server": {
