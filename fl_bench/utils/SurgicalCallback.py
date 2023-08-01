@@ -68,10 +68,7 @@ class SurgicalCallback():
 
         # update local model weights with received weights
         dxo = from_shareable(shareable)
-        if learner.epoch_global == 0:
-            learner.global_weights = dxo.data
-        else:
-            learner.global_weights = dxo.data[0]
+        learner.global_weights = dxo.data
 
         local_var_dict = learner.model.state_dict()
         model_keys = learner.global_weights.keys()
@@ -116,10 +113,8 @@ class SurgicalCallback():
             return make_reply(ReturnCode.TASK_ABORTED)
         # update local model weights with received weights
         dxo = from_shareable(shareable)
-        if learner.epoch_global == 0:
-            global_weights = dxo.data
-        else:
-            global_weights = dxo.data[0]
+        global_weights = dxo.data
+
         local_var_dict = learner.model.state_dict()
         model_keys = global_weights.keys()
         n_loaded = 0
