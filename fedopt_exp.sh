@@ -24,7 +24,7 @@ python3 fl_bench/utils/set_update_parameters.py \
 -job fl_bench/cifar10/job_configs/cifar10_fedopt \
 -dataset cifar10 \
 --alpha 0.6 \
---num_rounds 25 \
+--num_rounds 20 \
 --lr 0.03 \
 --epochs 4 \
 --model_name resnet20
