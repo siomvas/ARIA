@@ -37,7 +37,7 @@ nvflare simulator ${algorithms_dir}/cifar10_fedopt -w ${RESULT_ROOT} -n 10 -t 10
 # -dataset cifar10 \
 # -learner adamw \
 # --alpha 0.6 \
-# --num_rounds 150 \
+# --num_rounds 120 \
 # --lr 0.001 \
 # --epochs 4 \
 # --model_name focalnet
