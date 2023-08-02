@@ -58,6 +58,7 @@ class MyLearner(Learner):
                 abort_signal
             )
             self.model.train()
+            avg_loss = 0.0
             for i, batch_data in enumerate(self.data_module.train_dataloader):
                 self.fl_callback.on_train_batch_start(abort_signal)
                 inputs = batch_data["image"].to(self.device)
@@ -71,12 +72,15 @@ class MyLearner(Learner):
                 loss.backward()
                 self.optimizer.step()
                 current_step = self.t_len * self.epoch_global + i
+                self.writer.add_scalar("Train Loss/Batch Loss", loss.item(), current_step)
+                avg_loss += loss.item()
 
             if self.scheduler:
                 self.scheduler.step()
 
-            self.writer.add_scalar("train_loss", loss.item(), current_step)
             self.log_info(fl_ctx, f"Epoch {epoch} finished. Loss: {loss.item()}")
+            self.writer.add_scalar("Train Loss/Average Loss", avg_loss/self.t_len, current_step)
+
 
         self.epoch_of_start_time += self.epochs
 
@@ -86,11 +90,8 @@ class MyLearner(Learner):
         for name in self.global_weights:
             if name not in local_weights:
                 continue
-            model_diff[name] = np.subtract(
-                local_weights[name].cpu().numpy(),
-                self.global_weights[name],
-                dtype=np.float32,
-            )
+            model_diff[name] = local_weights[name].cpu().numpy() - self.global_weights[name]
+
             if np.any(np.isnan(model_diff[name])):
                 self.system_panic(f"{name} weights became NaN...", fl_ctx)
                 return make_reply(ReturnCode.EXECUTION_EXCEPTION)
@@ -102,30 +103,30 @@ class MyLearner(Learner):
         self.log_info(fl_ctx, "Local epochs finished. Returning shareable")
         return dxo.to_shareable()
 
-    def validate(self, shareable, fl_ctx, abort_signal):
+    # def validate(self, shareable, fl_ctx, abort_signal):
 
-        # # Handle boilerplate + loading before local_valid
-        # self.fl_callback.on_validation_start(self, shareable, abort_signal)
+    #     # Handle boilerplate + loading before local_valid
+    #     self.fl_callback.on_validation_start(self, shareable, abort_signal)
 
-        # self.model.eval()
-        # with torch.no_grad():
-        #     metric = 0
-        #     for i, batch_data in enumerate(self.data_module.val_dataloader):
-        #         self.fl_callback.on_validation_batch_start(abort_signal)
+    #     self.model.eval()
+    #     with torch.no_grad():
+    #         metric = 0
+    #         for i, batch_data in enumerate(self.data_module.val_dataloader):
+    #             self.fl_callback.on_validation_batch_start(abort_signal)
 
-        #         val_images = batch_data["image"].to(self.device)
-        #         val_labels = batch_data["label"].to(self.device)
-        #         # Inference
-        #         outputs = self.inferer(val_images, self.model)
-        #         _, outputs_categorical = torch.max(outputs, 1)
-        #         metric_score = self.valid_metric(val_labels.cpu(), outputs_categorical.cpu())
-        #         metric += metric_score.item()
-        #     # compute mean metric over whole validation set
-        #     metric /= self.v_len
+    #             val_images = batch_data["image"].to(self.device)
+    #             val_labels = batch_data["label"].to(self.device)
+    #             # Inference
+    #             outputs = self.inferer(val_images, self.model)
+    #             _, outputs_categorical = torch.max(outputs, 1)
+    #             metric_score = self.valid_metric(val_labels.cpu(), outputs_categorical.cpu())
+    #             metric += metric_score.item()
+    #         # compute mean metric over whole validation set
+    #         metric /= self.v_len
 
-        # self.fl_callback.on_validation_end(
-        #     self, abort_signal, fl_ctx, metric)
-        pass
+    #     self.fl_callback.on_validation_end(
+    #         self, abort_signal, fl_ctx, metric)
+    #     pass
 
     def finalize(self):
         self.writer.flush()
