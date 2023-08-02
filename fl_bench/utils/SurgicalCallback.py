@@ -1,6 +1,7 @@
 import copy
 
 import numpy as np
+import os
 import torch
 from nvflare.apis.dxo import DXO, DataKind, MetaKey, from_shareable
 from nvflare.apis.fl_constant import FLContextKey, ReturnCode
@@ -19,6 +20,9 @@ class SurgicalCallback():
         app_dir = ws.get_app_dir(fl_ctx.get_job_id())
         fl_args = fl_ctx.get_prop(FLContextKey.ARGS)
         learner.client_id = fl_ctx.get_identity_name()
+        learner.best_metric = 0
+        learner.model_file_path = os.path.join(app_dir, "personalized_model.pt")
+        learner.best_model_file_path = os.path.join(app_dir, "best_personalized_model.pt")
         learner.log_info(
             fl_ctx,
             f"Client {learner.client_id} initialized with args: \n {fl_args}",
