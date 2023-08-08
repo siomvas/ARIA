@@ -1,6 +1,6 @@
 {
     "format_version": 2,
-    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/res/cifar10_splits/cifar10_fedavg_num_rounds=30_lr=0.01_epochs=10_model=wideresnet_16_8_alpha=0.6",
+    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/surg_res/alpha10_2",
     "executors": [
         {
             "tasks": [
@@ -22,12 +22,12 @@
     "components": [
         {
             "id": "cifar10-learner",
-            "path": "fl_bench.cifar10.pt.learners.cifar10_learner_savemore.CIFAR10Learner_savemore",
+            "path": "fl_bench.cifar10.pt.learners.cifar10_learner.CIFAR10Learner",
             "args": {
                 "train_idx_root": "{TRAIN_SPLIT_ROOT}",
-                "aggregation_epochs": 10,
+                "aggregation_epochs": 4,
                 "lr": 0.01,
-                "model_arch": "wideresnet_16_8",
+                "model_arch": "wideresnet_16_8_moon",
                 "save_freq": 2
             }
         }

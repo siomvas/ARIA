@@ -3,6 +3,7 @@ import json
 import os
 import uuid
 
+
 def read_json(filename):
     assert os.path.isfile(filename), f"{filename} does not exist!"
 

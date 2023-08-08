@@ -298,3 +298,4 @@ __pycache__
 .pyc
 
 res/cifar10_splits/*
+surg_res/*

@@ -1,9 +1,9 @@
 {
     "format_version": 2,
     "min_clients": 10,
-    "num_rounds": 30,
-    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/res/cifar10_splits/cifar10_fedavg_num_rounds=30_lr=0.01_epochs=10_model=wideresnet_16_8_alpha=0.6",
-    "alpha": 0.6,
+    "num_rounds": 10,
+    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/surg_res/alpha10_2",
+    "alpha": 10,
     "server": {
         "heart_beat_timeout": 600
     },
@@ -85,5 +85,5 @@
             }
         }
     ],
-    "model_path": "fl_bench.networks.cifar10_nets.wideresnet_16_8"
+    "model_path": "fl_bench.networks.cifar10_nets.wideresnet_16_8_moon"
 }

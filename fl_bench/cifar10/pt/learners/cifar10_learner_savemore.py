@@ -72,8 +72,8 @@ class CIFAR10Learner_savemore(Learner):
 
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.model = eval(self.model_arch + "()").to(self.device)
-        # self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=0.9)
-        self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=1e-5)
+        self.optimizer = optim.SGD(self.model.parameters(), lr=self.lr, momentum=0.9)
+        # self.optimizer = optim.AdamW(self.model.parameters(), lr=self.lr, weight_decay=1e-5)
 
         self.criterion = torch.nn.CrossEntropyLoss()
         if self.fedproxloss_mu > 0:
