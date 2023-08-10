@@ -7,7 +7,7 @@ from fl_bench.utils.cifar10_helpers import CIFAR10_Idx
 
 class CIFAR10DataModule():
     def __init__(
-        self, 
+        self,
         data_dir: str,
         train_idx_root: str,
         client_idx: str,
