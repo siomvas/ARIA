@@ -1,0 +1,9 @@
+{
+    "name": "medmnist_federated",
+    "deploy_map": {
+        "medmnist_federated": [
+            "@ALL"
+        ]
+    },
+    "min_clients": 5
+}

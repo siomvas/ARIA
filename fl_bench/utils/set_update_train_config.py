@@ -35,7 +35,7 @@ def map_func(dataset: str, learner: str) -> str:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-dataset", type=str, choices=['fed_isic'], default='fed_isic')
+    parser.add_argument("-dataset", type=str, choices=['fed_isic, medmnist'], default='medmnist')
     parser.add_argument("-job", type=str, help="Path to job config.")
     parser.add_argument(
         "-learner",
@@ -68,6 +68,12 @@ def main():
         type=str,
         default=argparse.SUPPRESS,
         help="optimizer arguments, pass as 'k:v, k:v'"
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=0,
+        help="seed for random number generator",
     )
 
     parser.add_argument(

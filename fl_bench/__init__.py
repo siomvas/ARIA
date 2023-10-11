@@ -1,1 +1,1 @@
-from . import cifar10, utils
+from . import cifar10, medmnist, utils
