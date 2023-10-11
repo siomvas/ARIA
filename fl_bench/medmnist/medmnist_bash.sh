@@ -2,17 +2,16 @@ conda activate flare
 cd /path/to/FL_bench/fl_bench/medmnist
 RESULT_ROOT=/path/to/localscratch/MedMNIST/
 algorithms_dir="${PWD}/job_configs"
-name="direct_session_new"
+name="direct_session_fed_debug1"
 
-# Central
 python3 ${PWD}/src/setup.py \
--job ${algorithms_dir}/medmnist_central \
+-job ${algorithms_dir}/medmnist_federated \
 -method fedavg \
--alpha -2 \
+-alpha 1 \
 -num_rounds 2 \
 -lr 0.01 \
--local_steps 4 \
--model_name efficientnetv2_s_pretrained_pt \
+-local_steps 5 \
+-model_name resnet_50 \
 -seed 222
 
-nvflare simulator ${algorithms_dir}/medmnist_central -w ${RESULT_ROOT}/${name} -n 1 -gpu 0
+nvflare simulator ${algorithms_dir}/medmnist_federated -w ${RESULT_ROOT}/${name} -n 4 -gpu 1,1,1,1

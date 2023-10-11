@@ -101,3 +101,87 @@ class MedMNISTDataModule():
         self.val_dataset = {}
         self.train_dataloader = {}
         self.val_dataloader = {}
+
+
+class ComboOrganAMNISTDataModule():
+    def __init__(
+        self,
+        data_dir: str,
+        idx_root: str,
+        client_idx: str,
+        central: bool,
+        batch_size: int = 64,
+        seed: int = 0
+    ):
+        self.seed = seed
+        seed_everything(seed)
+        self.data_dir = data_dir
+        self.client_idx = client_idx
+        self.idx_root = idx_root
+        self.central = central
+        self.batch_size = batch_size
+        self.transform_train = transforms.Compose([
+            transforms.Grayscale(3),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[.5], std=[.5]),
+            transforms.Resize((224, 224), antialias=True)
+        ])
+        self.transform_valid = self.transform_train
+        self.target_transform = transforms.Compose([
+            lambda x: x.squeeze(-1)
+        ])
+        self.setup()
+
+    def setup(self):
+
+        if self.central is False:
+            site_idx_train_name = os.path.join(self.idx_root, self.client_idx + "-train" + ".npy")
+            site_idx_val_name = os.path.join(self.idx_root, self.client_idx + "-val" + ".npy")
+            if os.path.exists(site_idx_train_name) and os.path.exists(site_idx_val_name):
+                site_idx_train = np.load(site_idx_train_name).tolist()
+                site_idx_val = np.load(site_idx_val_name).tolist()
+            else:
+                raise ValueError(f"File {site_idx_train_name} or {site_idx_val_name} does not exist!")
+        else:
+            site_idx_train = None
+            site_idx_val = None
+
+        whole_tset = medmnist.OrganAMNIST(
+            root=self.data_dir,
+            split='train',
+            download=False,
+            transform=self.transform_train,
+            target_transform=self.target_transform,
+        )
+        whole_vset = medmnist.OrganAMNIST(
+            root=self.data_dir,
+            split='val',
+            download=False,
+            transform=self.transform_valid,
+            target_transform=self.target_transform,
+        )
+        self.train_dataset = torch.utils.data.Subset(whole_tset, site_idx_train) if site_idx_train is not None else whole_tset
+        self.val_dataset = torch.utils.data.Subset(whole_vset, site_idx_val) if site_idx_val is not None else whole_vset
+        self.combo_dataset = torch.utils.data.ConcatDataset([self.train_dataset, self.val_dataset])
+
+        self.test_dataset = medmnist.OrganAMNIST(
+            root=self.data_dir,
+            split="test",
+            download=False,
+            transform=self.transform_valid,
+            target_transform=self.target_transform
+            )
+
+        g = torch.Generator()
+        g.manual_seed(self.seed)
+
+        self.train_dataloader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=4, pin_memory=True, worker_init_fn=seed_worker, generator=g)
+        self.val_dataloader = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=4, pin_memory=True, worker_init_fn=seed_worker, generator=g)
+        self.combo_dataloader = DataLoader(self.combo_dataset, batch_size=self.batch_size, shuffle=True, num_workers=4, pin_memory=True, worker_init_fn=seed_worker, generator=g)
+        self.test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=4, pin_memory=True, worker_init_fn=seed_worker, generator=g)
+
+    def teardown(self):
+        self.train_dataset = {}
+        self.val_dataset = {}
+        self.train_dataloader = {}
+        self.val_dataloader = {}

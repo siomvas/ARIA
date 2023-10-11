@@ -1,9 +1,9 @@
 {
-    "name": "medmnist_federated",
+    "name": "medmnist_federated_resnet_50_2_0.01_5_medmnist_fedavg",
     "deploy_map": {
         "medmnist_federated": [
             "@ALL"
         ]
     },
-    "min_clients": 5
+    "min_clients": 4
 }

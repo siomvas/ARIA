@@ -91,15 +91,15 @@ class GlobalMetricLogger(Widget):
         contribution_round = shareable.get_header(AppConstants.CONTRIBUTION_ROUND)
         client_name = shareable.get_peer_prop(ReservedKey.IDENTITY_NAME, default="?")
 
-        if current_round == 0:
-            self.log_debug(fl_ctx, "Skip the first round.")
-            return
+        # if current_round == 0:
+        #     self.log_debug(fl_ctx, "Skip the first round.")
+        #     return
 
-        if contribution_round != current_round:
-            self.log_warning(
-                fl_ctx, f"Discard round {contribution_round} metrics from {client_name} at round {current_round}"
-            )
-            return
+        # if contribution_round != current_round:
+        #     self.log_warning(
+        #         fl_ctx, f"Discard round {contribution_round} metrics from {client_name} at round {current_round}"
+        #     )
+        #     return
 
         val_metric = dxo.get_meta_prop(self.val_metric_name)
         if val_metric is None:
@@ -108,7 +108,7 @@ class GlobalMetricLogger(Widget):
         else:
             self.log_info(fl_ctx, f"Received validation metric {val_metric} from {client_name}.")
 
-        client_weight = self.aggregation_weights.get(client_name, 1.0)
+        client_weight = 1.0
         self.val_metric_sum += val_metric * client_weight
         self.val_metric_weights += client_weight
 

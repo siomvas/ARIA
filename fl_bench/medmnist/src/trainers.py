@@ -112,7 +112,7 @@ class BaseTrainer(object):
                     break
 
             self.logger.add_scalar(
-                "Loss/Average Loss",
+                "Loss/Round Loss",
                 avg_loss / num_steps,
                 self.current_step
             )

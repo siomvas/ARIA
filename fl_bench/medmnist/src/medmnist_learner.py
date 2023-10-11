@@ -17,9 +17,9 @@ from nvflare.app_common.app_constant import (AppConstants, ModelName,
 from prettytable import PrettyTable
 from torch.utils.tensorboard.writer import SummaryWriter
 
-from fl_bench.medmnist.src.medmnistDM import MedMNISTDataModule
-from fl_bench.medmnist.src.utils import load_weights, extract_weights, seed_everything
-from fl_bench.medmnist.src.validator import Validator
+from .medmnistDM import MedMNISTDataModule, ComboOrganAMNISTDataModule
+from .utils import load_weights, extract_weights, seed_everything
+from .validator import Validator
 from fl_bench.networks.medmnist_nets import *
 
 from .trainers import BaseTrainer, ScaffoldTrainer
@@ -246,7 +246,7 @@ class MedMNISTLearner(Learner):
             if model_data:
                 data = {}
                 for var_name in model_data["model"]:
-                    data[var_name] = model_data[var_name].numpy()
+                    data[var_name] = model_data['model'][var_name].numpy()
                 dxo = DXO(data_kind=DataKind.WEIGHTS, data=data)
                 return dxo.to_shareable()
             else:
