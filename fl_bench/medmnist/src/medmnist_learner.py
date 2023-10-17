@@ -35,6 +35,7 @@ class MedMNISTLearner(Learner):
         central: bool = False,
         train_task_name: str = AppConstants.TASK_TRAIN,
         submit_model_task_name: str = AppConstants.TASK_SUBMIT_MODEL,
+        hyperion: bool = False,
     ):
         super().__init__()
         self.config_train_name = config_train_name
@@ -44,6 +45,7 @@ class MedMNISTLearner(Learner):
         self.central = central
         self.train_task_name = train_task_name
         self.submit_model_task_name = submit_model_task_name
+        self.hyperion = hyperion
 
     def initialize(self, parts, fl_ctx):
 
@@ -59,11 +61,23 @@ class MedMNISTLearner(Learner):
             raise ValueError("No GPU detected")
 
         self.model = eval(config_train["model_name"] + f"({self.seed})").to(self.device)
+        # self.model = torch.compile(self.model)
 
-        data_dir = os.getenv("MEDMNIST_ROOT")
-        self.dm = MedMNISTDataModule(
+        if self.hyperion:
+            data_dir = os.getenv("HYPERION_MEDMNIST_ROOT")
+        else:
+            data_dir = os.getenv("MEDMNIST_ROOT")
+        # self.dm = MedMNISTDataModule(
+        #     data_dir=data_dir,
+        #     train_idx_root=config_train["train_idx_root"],
+        #     client_idx=fl_ctx.get_identity_name(),
+        #     central=self.central,
+        #     batch_size=config_train["batch_size"],
+        #     seed=self.seed
+        # )
+        self.dm = ComboOrganAMNISTDataModule(
             data_dir=data_dir,
-            train_idx_root=config_train["train_idx_root"],
+            idx_root=config_train["train_idx_root"],
             client_idx=fl_ctx.get_identity_name(),
             central=self.central,
             batch_size=config_train["batch_size"],
@@ -81,6 +95,7 @@ class MedMNISTLearner(Learner):
             self.trainer = BaseTrainer(config_train, self.method)
         else:
             self.trainer = ScaffoldTrainer(config_train, self.method)
+
         self.validator = Validator()
 
     def train(self, data, fl_ctx, abort_signal) -> Shareable:
@@ -90,6 +105,9 @@ class MedMNISTLearner(Learner):
         self.log_info(fl_ctx, f"Current/Total Round: {current_round + 1}/{num_rounds}")
         self.log_info(fl_ctx, f"Client identity: {fl_ctx.get_identity_name()}")
 
+        if self.method == 'scaffold':
+            
+
         # update local model weights with received weights
         dxo = from_shareable(data)
         global_weights = dxo.data
@@ -97,7 +115,6 @@ class MedMNISTLearner(Learner):
         # TODO: load weights from global_weights
         # make a copy of model_global as reference for potential FedProx loss
         if self.method == "fedprox":
-            # FIX: model_global needs to be copied from updated values
             self.model_global = copy.deepcopy(self.model)
             for param in self.model_global.parameters():
                 param.requires_grad = False
@@ -109,7 +126,7 @@ class MedMNISTLearner(Learner):
             try:
                 self.trainer.run(
                     self.model,
-                    self.dm.train_dataloader,
+                    self.dm.combo_dataloader,
                     num_steps=self.local_steps,
                     logger=self.writer,
                 )
@@ -131,7 +148,7 @@ class MedMNISTLearner(Learner):
         # Run validation
         for i in range(self.max_retry + 1):
             try:
-                metrics = self.validator.run(self.model, self.dm.val_dataloader)
+                metrics = self.validator.run(self.model, self.dm.test_dataloader)
                 break
             except Exception as e:
                 if i < self.max_retry:
@@ -147,7 +164,7 @@ class MedMNISTLearner(Learner):
         table.field_names = ["Metric", "Value"]
         for m, v in metrics.items():
             table.add_row([m, v])
-            self.writer.add_scalar(m, v, current_round)
+            self.writer.add_scalar(f"Accuracy/Post-Train Val Accuracy", v, current_round)
         self.log_info(fl_ctx, str(table))
 
         # Save checkpoint if necessary
@@ -182,7 +199,7 @@ class MedMNISTLearner(Learner):
         phase = None
         if validate_type == ValidateType.BEFORE_TRAIN_VALIDATE:
             phase = "validate"
-            data_loader = self.dm.val_dataloader
+            data_loader = self.dm.test_dataloader
         elif validate_type == ValidateType.MODEL_VALIDATE:
             phase = "test"
             data_loader = self.dm.test_dataloader

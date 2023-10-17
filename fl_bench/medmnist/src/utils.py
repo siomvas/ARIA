@@ -198,19 +198,21 @@ class MedMNISTDataSplitter(FLComponent):
         return site_idx, class_sum
 
 
-class Combo_Splitter(FLComponent):
+class ComboSplitter(FLComponent):
     def __init__(
         self,
         split_dir: str = None,
         num_sites: int = 5,
         alpha: float = 0.5,
         seed: int = 0,
+        hyperion: bool = False,
     ):
         super().__init__()
         self.split_dir = split_dir
         self.num_sites = num_sites
         self.alpha = alpha
         self.seed = seed
+        self.hyperion = hyperion
 
         seed_everything(seed)
 
@@ -259,13 +261,14 @@ class Combo_Splitter(FLComponent):
 
     def load_medmnist_data(self):
         # download data
+        data_dir = os.getenv("MEDMNIST_ROOT") if not self.hyperion else os.getenv("HYPERION_MEDMNIST_ROOT")
         train_dataset = medmnist.OrganAMNIST(
-            root=os.getenv("MEDMNIST_ROOT"),
+            root=data_dir,
             split="train",
             download=True
         )
         val_dataset = medmnist.OrganAMNIST(
-            root=os.getenv("MEDMNIST_ROOT"),
+            root=data_dir,
             split="val",
             download=True
         )

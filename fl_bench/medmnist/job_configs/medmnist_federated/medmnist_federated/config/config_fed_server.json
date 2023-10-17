@@ -1,11 +1,12 @@
 {
     "format_version": 2,
     "min_clients": 4,
-    "num_rounds": 2,
-    "seed": 222,
-    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/fl_bench/medmnist/splits/",
-    "alpha": 1.0,
-    "model_path": "fl_bench.networks.medmnist_nets.resnet_50",
+    "num_rounds": 50,
+    "seed": 111,
+    "hyperion": false,
+    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/fl_bench/medmnist/splits/combo/alpha=0.5_seed=111",
+    "alpha": 0.5,
+    "model_path": "fl_bench.networks.medmnist_nets.densenet_121_pretrained_pt",
     "server": {
         "heart_beat_timeout": 600
     },
@@ -14,12 +15,13 @@
     "components": [
         {
             "id": "data_splitter",
-            "path": "fl_bench.medmnist.src.utils.MedMNISTDataSplitter",
+            "path": "fl_bench.medmnist.src.utils.ComboSplitter",
             "args": {
                 "split_dir": "{TRAIN_SPLIT_ROOT}",
                 "num_sites": "{min_clients}",
                 "alpha": "{alpha}",
-                "seed": "{seed}"
+                "seed": "{seed}",
+                "hyperion": "{hyperion}"
             }
         },
         {
@@ -49,10 +51,9 @@
                 "device": "cpu",
                 "source_model": "model",
                 "optimizer_args": {
-                    "path": "torch.optim.SGD",
+                    "path": "torch.optim.Adam",
                     "args": {
-                        "lr": 1.0,
-                        "momentum": 0.6
+                        "lr": 1.0
                     },
                     "config_type": "dict"
                 },
@@ -60,7 +61,7 @@
                     "path": "torch.optim.lr_scheduler.CosineAnnealingLR",
                     "args": {
                         "T_max": "{num_rounds}",
-                        "eta_min": 0.9
+                        "eta_min": 0.8
                     },
                     "config_type": "dict"
                 }
@@ -120,7 +121,7 @@
                 "wait_time_after_min_received": 1,
                 "aggregator_id": "aggregator",
                 "persistor_id": "persistor",
-                "shareable_generator_id": "shareable_generator_base",
+                "shareable_generator_id": "shareable_generator_fedopt",
                 "train_task_name": "train",
                 "train_timeout": 0,
                 "task_check_period": 1

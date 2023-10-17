@@ -1,7 +1,8 @@
 import argparse
 import os
-import ast
+import json
 from fl_bench.medmnist.src.utils import read_json, write_json
+import uuid
 
 
 def main():
@@ -15,7 +16,10 @@ def main():
     parser.add_argument("-lr", type=float, default=argparse.SUPPRESS)
     parser.add_argument("--opt_args", type=str, default=argparse.SUPPRESS, help="optimizer arguments, pass as 'k:v, k:v'")
     parser.add_argument("-seed", type=int, default=222)
-    parser.add_argument("-amp", type=bool, default=True)
+    parser.add_argument("--amp", action="store_true")
+    parser.add_argument("--use_hyperion_dirs", action="store_true")
+    parser.add_argument("--batch_size", type=int, default=128)
+    parser.add_argument("--train_split_root", type=str, default="/path/to/FL_bench/fl_bench/medmnist/splits/combo/")
 
     args = parser.parse_args()
 
@@ -62,6 +66,17 @@ def main():
     # update alpha
     print(f"Setting alpha = {args.alpha}")
     server_config["alpha"] = args.alpha
+    token = str(uuid.uuid4())
+    job_name = f"{job_name}_alpha{args.alpha}"
+    meta_config["name"] = job_name
+    split_dir = os.path.join(args.train_split_root, f"alpha={args.alpha}_seed={args.seed}")
+    print(f"Set train split root to {split_dir}")
+    server_config["TRAIN_SPLIT_ROOT"] = split_dir
+    train_config["train_idx_root"] = split_dir
+    write_json(client_config, client_config_filename)
+    write_json(server_config, server_config_filename)
+    write_json(meta_config, meta_config_filename)
+
     # update method
     # learner_path = map_func(args.dataset, args.learner)
     print(f"Setting method = {args.method}")
@@ -84,13 +99,27 @@ def main():
 
     if "opt_args" in args:
         train_config = read_json(train_config_filename)
-        train_config["optimizer_args"] = ast.literal_eval(args.opt_args)
+        # train_config["optimizer_args"] = ast.literal_eval(args.opt_args)
+        train_config["optimizer_args"] = json.loads(args.opt_args)
         write_json(train_config, train_config_filename)
-    
-    if "amp" in args:
-        train_config = read_json(train_config_filename)
-        train_config["use_half_precision"] = args.amp
-        write_json(train_config, train_config_filename)
+
+    train_config = read_json(train_config_filename)
+    train_config["use_half_precision"] = True if args.amp else False
+    write_json(train_config, train_config_filename)
+    print(f"Setting amp = {args.amp}")
+
+    server_config = read_json(server_config_filename)
+    client_config = read_json(client_config_filename)
+    server_config["hyperion"] = True if args.use_hyperion_dirs else False
+    client_config["components"][0]["args"]["hyperion"] = True if args.use_hyperion_dirs else False
+    write_json(server_config, server_config_filename)
+    write_json(client_config, client_config_filename)
+    print(f"Setting hyperion = {args.use_hyperion_dirs}")
+
+    train_config = read_json(train_config_filename)
+    train_config["batch_size"] = args.batch_size
+    write_json(train_config, train_config_filename)
+    print(f"Setting batch_size = {args.batch_size}")
 
 
 if __name__ == "__main__":

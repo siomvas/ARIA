@@ -115,7 +115,7 @@ class CIFAR10ScaffoldLearner(CIFAR10Learner):
                 loss.backward()
                 self.optimizer.step()
 
-                # SCAFFOLD step
+                # SCAFFOLD model update step
                 curr_lr = get_lr_values(self.optimizer)[0]
                 self.scaffold_helper.model_update(
                     model=self.model, curr_lr=curr_lr, c_global_para=c_global_para, c_local_para=c_local_para
@@ -194,5 +194,5 @@ class CIFAR10ScaffoldLearner(CIFAR10Learner):
             shareable = copy.deepcopy(shareable)  # TODO: Is this the best way?
             dxo_global_weights = dxo.data.get(AppConstants.MODEL_WEIGHTS)
             shareable = dxo_global_weights.update_shareable(shareable)  # TODO: add set_dxo() method to Shareable
-
+ 
         return super().validate(shareable=shareable, fl_ctx=fl_ctx, abort_signal=abort_signal)

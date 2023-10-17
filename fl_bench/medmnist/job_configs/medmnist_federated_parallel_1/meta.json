@@ -1,0 +1,9 @@
+{
+    "name": "medmnist_federated_parallel_1_resnet_50_50_0.01_200_alpha0.5_medmnist_fedavg",
+    "deploy_map": {
+        "medmnist_federated_parallel_1": [
+            "@ALL"
+        ]
+    },
+    "min_clients": 4
+}

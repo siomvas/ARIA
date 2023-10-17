@@ -1,6 +1,6 @@
 from nvflare import SimulatorRunner
 import sys
-RESULT_ROOT = "/path/to/localscratch/MedMNIST/debug_logs"
+RESULT_ROOT = "/path/to/localscratch/MedMNIST/debug"
 algorithms_dir = "/path/to/FL_bench/fl_bench/medmnist/job_configs/medmnist_federated"
 
 

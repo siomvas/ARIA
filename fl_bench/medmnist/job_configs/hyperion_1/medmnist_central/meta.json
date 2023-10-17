@@ -1,0 +1,9 @@
+{
+    "name": "medmnist_central_efficientnetv2_s_pretrained_pt_2_0.01_4_medmnist_fedavg",
+    "deploy_map": {
+        "medmnist_central": [
+            "@ALL"
+        ]
+    },
+    "min_clients": 1
+}

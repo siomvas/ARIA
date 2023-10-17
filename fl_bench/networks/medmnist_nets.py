@@ -6,7 +6,7 @@ import torch.nn as nn
 import torchvision.models as tm
 from fl_bench.medmnist.src.utils import seed_everything
 
-model_dir = "/mnt/localscratch/path/to/model_weights"
+model_dir = "/path/to/model_weights"
 torch.hub.set_dir(model_dir)
 
 NUM_CLASSES = 11
@@ -160,7 +160,7 @@ def efficientnet_v2_s(seed):
     return bb
 
 
-def efficientnetv2_s_pretrained_pt(seed):
+def efficientnet_v2_s_pretrained_pt(seed):
     seed_everything(seed)
     os.environ['https_proxy'] = 'http://proxy.example.org:3128'
     bb = tm.efficientnet_v2_s(weights="IMAGENET1K_V1")
@@ -253,8 +253,8 @@ def swin_t_pretrained_pt(seed):
 def vit_b_16(seed):
     seed_everything(seed)
     bb = tm.vit_b_16()
-    num_ftrs = bb.head.in_features
-    bb.head = nn.Linear(num_ftrs, NUM_CLASSES)
+    num_ftrs = bb.heads.head.in_features
+    bb.heads.head = nn.Linear(num_ftrs, NUM_CLASSES)
     return bb
 
 
@@ -263,8 +263,8 @@ def vit_b_16_pretrained_pt(seed):
     os.environ['https_proxy'] = 'http://proxy.example.org:3128'
     bb = tm.vit_b_16(weights="IMAGENET1K_V1")
     os.environ['https_proxy'] = ''
-    num_ftrs = bb.head.in_features
-    bb.head = nn.Linear(num_ftrs, NUM_CLASSES)
+    num_ftrs = bb.heads.head.in_features
+    bb.heads.head = nn.Linear(num_ftrs, NUM_CLASSES)
     return bb
 
 

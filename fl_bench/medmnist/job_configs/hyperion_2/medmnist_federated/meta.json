@@ -1,0 +1,9 @@
+{
+    "name": "medmnist_federated_convnext_small_pretrained_pt_50_0.01_200_alpha0.5_medmnist_fedopt",
+    "deploy_map": {
+        "medmnist_federated": [
+            "@ALL"
+        ]
+    },
+    "min_clients": 4
+}
