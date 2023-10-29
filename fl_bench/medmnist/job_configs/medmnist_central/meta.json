@@ -1,5 +1,5 @@
 {
-    "name": "medmnist_central_efficientnet_v2_s_pretrained_pt_50_0.01_800_alpha-1.0_medmnist_fedavg",
+    "name": "medmnist_central_vit_b_16_myssl_short_5_0.01_8000_alpha-1.0_medmnist_fedavg",
     "deploy_map": {
         "medmnist_central": [
             "@ALL"

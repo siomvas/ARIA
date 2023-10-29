@@ -299,3 +299,6 @@ __pycache__
 
 res/cifar10_splits/*
 surg_res/*
+
+skin_ssl/
+abdomen_ssl/

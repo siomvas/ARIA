@@ -12,13 +12,14 @@ python3 ${PWD}/src/setup.py \
 -job ${algorithms_dir}/medmnist_central \
 -method fedavg \
 -alpha -1 \
--num_rounds 50 \
+-num_rounds 5 \
 -lr 0.01 \
 --batch_size 64 \
--local_steps 800 \
+-local_steps 8000 \
 -model_name ${model_name} \
 -seed 111 \
 --amp \
+--use_hyperion_dirs \
 --opt_args '{"class": "SGD", "momentum": 0.9, "nesterov": true, "weight_decay": 1e-5}' \
 # --opt_args '{"class": "Adam", "weight_decay": 1e-5}'
 
@@ -38,4 +39,4 @@ else
     echo "Directory ${RESULT_ROOT}/${name} does not exist."
 fi
 
-nvflare simulator ${algorithms_dir}/medmnist_central -w ${RESULT_ROOT}/${name} -n 1 -gpu 1
+nvflare simulator ${algorithms_dir}/medmnist_central -w ${RESULT_ROOT}/${name} -n 1 -gpu 0

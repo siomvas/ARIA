@@ -30,6 +30,7 @@ class BaseTrainer(object):
         self.criterion_prox = None
         self.validator = Validator()
         self.criterion = torch.nn.CrossEntropyLoss()
+        self.gradient_accumulation_steps = 2
 
     def configure_optimizer(self):
         optimizer_class = self.optimizer_dict.pop('class', None)
@@ -42,7 +43,7 @@ class BaseTrainer(object):
         if self.opt_state is not None:
             self.opt.load_state_dict(self.opt_state)
 
-        self.sch = CosineAnnealingLR(self.opt, T_max=self.max_steps, eta_min=1e-4)
+        self.sch = CosineAnnealingLR(self.opt, T_max=self.max_steps/self.gradient_accumulation_steps, eta_min=1e-4)
         # self.sch = torch.optim.lr_scheduler.OneCycleLR(
         #     self.opt,
         #     total_steps=self.max_steps,
@@ -68,22 +69,20 @@ class BaseTrainer(object):
             # Configure progress bar
             pbar.set_description(f"Round {self.current_round}")
 
-            gradient_accumulation_steps = 2
-
             for i, batch in enumerate(self.get_batch(data_loader, num_steps)):
                 # Forward
                 with torch.cuda.amp.autocast(enabled=self.use_half_precision):
                     image = batch["image"].to(device)
                     label = batch["label"].to(device)
                     preds = self.model(image)
-                    loss = self.criterion(preds, label) / gradient_accumulation_steps
+                    loss = self.criterion(preds, label) / self.gradient_accumulation_steps
 
                 # Backward
                 self.opt.zero_grad(set_to_none=True)
                 self.scaler.scale(loss).backward()                
 
                 #  Gradient accumulation
-                if (i + 1) % gradient_accumulation_steps == 0:
+                if (i + 1) % self.gradient_accumulation_steps == 0:
                     # Gradient clipping
                     # self.scaler.unscale_(self.opt)
                     # torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0, norm_type=2.0)
@@ -94,7 +93,7 @@ class BaseTrainer(object):
                     self.scaler.update()
 
                     if self.logger is not None:
-                        step = (self.current_step-1) / gradient_accumulation_steps
+                        step = self.current_step / self.gradient_accumulation_steps
                         self.logger.add_scalar("Loss/Batch Loss", loss, step)
                         self.logger.add_scalar("Learning Rate", self.sch.get_last_lr()[-1], step)
 
@@ -103,7 +102,7 @@ class BaseTrainer(object):
                 pbar.update(1)
 
                 # Write average loss to tensorboard
-                avg_loss += loss.item() 
+                avg_loss += loss.item()
 
                 self.current_step += 1
                 if self.current_step >= target_step:
@@ -114,13 +113,13 @@ class BaseTrainer(object):
             self.logger.add_scalar(
                 "Loss/Round Loss",
                 avg_loss / num_steps,
-                (self.current_step-1) / gradient_accumulation_steps
+                self.current_step / self.gradient_accumulation_steps
             )
             post_train_acc = next(iter(self.validator.run(self.model, data_loader).values()))
             self.logger.add_scalar(
                 "Accuracy/Post-Train Train Accuracy",
                 post_train_acc,
-                (self.current_step-1) / gradient_accumulation_steps
+                self.current_step / self.gradient_accumulation_steps
             )
 
     def setup(self, model, logger, abort_signal):
@@ -200,7 +199,7 @@ class ScaffoldTrainer(BaseTrainer):
     def __init__(self, train_config: Dict, method: str):
         super().__init__(train_config, method)
         self.scaffold_helper = AltScaffoldHelper()
-    
+
     def setup(self, model, logger, abort_signal):
         self.model = model
         # global model setup for aux losses
@@ -211,8 +210,6 @@ class ScaffoldTrainer(BaseTrainer):
         else:
             self.abort = None
 
-        exclude_vars = ["num_batches_tracked", "attn.relative_position_index"]
-        self.scaffold_helper.init(model=self.model, exclude_vars=exclude_vars)
         self.configure_optimizer()
 
     def training_loop(self, data_loader: DataLoader, num_steps: int, device: str = "cuda:0"):
@@ -224,7 +221,6 @@ class ScaffoldTrainer(BaseTrainer):
             # Configure progress bar
             pbar.set_description(f"Round {self.current_round}")
 
-            gradient_accumulation_steps = 2
 
             for i, batch in enumerate(self.get_batch(data_loader, num_steps)):
                 # Forward
@@ -232,14 +228,14 @@ class ScaffoldTrainer(BaseTrainer):
                     image = batch["image"].to(device)
                     label = batch["label"].to(device)
                     preds = self.model(image)
-                    loss = self.criterion(preds, label) / gradient_accumulation_steps
+                    loss = self.criterion(preds, label) / self.gradient_accumulation_steps
 
                 # Backward
                 self.opt.zero_grad(set_to_none=True)
                 self.scaler.scale(loss).backward()                
 
                 #  Gradient accumulation
-                if (i + 1) % gradient_accumulation_steps == 0:
+                if (i + 1) % self.gradient_accumulation_steps == 0:
                     # Gradient clipping
                     # self.scaler.unscale_(self.opt)
                     # torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0, norm_type=2.0)
@@ -259,7 +255,7 @@ class ScaffoldTrainer(BaseTrainer):
                     )
 
                     if self.logger is not None:
-                        step = (self.current_step-1) / gradient_accumulation_steps
+                        step = self.current_step / self.gradient_accumulation_steps
                         self.logger.add_scalar("Loss/Batch Loss", loss, step)
                         self.logger.add_scalar("Learning Rate", self.sch.get_last_lr()[-1], step)
 
@@ -279,7 +275,7 @@ class ScaffoldTrainer(BaseTrainer):
             self.logger.add_scalar(
                 "Loss/Round Loss",
                 avg_loss / num_steps,
-                self.current_step / gradient_accumulation_steps
+                self.current_step / self.gradient_accumulation_steps
             )
             # SCAFFOLD terms update step
             self.scaffold_helper.terms_update(
@@ -287,14 +283,12 @@ class ScaffoldTrainer(BaseTrainer):
                 curr_lr=curr_lr,
                 c_global_para=c_global_para,
                 c_local_para=c_local_para,
-                model_global=model_global,
+                model_global=self.global_model,
             )
             # Post-train accuracy
             post_train_acc = next(iter(self.validator.run(self.model, data_loader).values()))
             self.logger.add_scalar(
                 "Accuracy/Post-Train Train Accuracy",
                 post_train_acc,
-                self.current_step / gradient_accumulation_steps
+                self.current_step / self.gradient_accumulation_steps
             )
-    
-

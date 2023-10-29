@@ -6,12 +6,28 @@
     "hyperion": true,
     "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/fl_bench/medmnist/splits/combo/alpha=0.5_seed=111",
     "alpha": 0.5,
-    "model_path": "fl_bench.networks.medmnist_nets.convnext_small_pretrained_pt",
+    "model_path": "fl_bench.networks.medmnist_nets.vit_b_16_pretrained_pt",
     "server": {
         "heart_beat_timeout": 600
     },
     "task_data_filters": [],
-    "task_result_filters": [],
+    "task_result_filters": [
+        {
+            "tasks": [
+                "train",
+                "submit_model",
+                "validate"
+            ],
+            "filters": [
+                {
+                    "name": "ExcludeVars",
+                    "args": {
+                        "exclude_vars": "(?:num_batches_tracked)|(?:attn.relative_position_index)"
+                    }
+                }
+            ]
+        }
+    ],
     "components": [
         {
             "id": "data_splitter",
@@ -72,7 +88,10 @@
             "id": "aggregator",
             "name": "InTimeAccumulateWeightedAggregator",
             "args": {
-                "expected_data_kind": "WEIGHT_DIFF"
+                "expected_data_kind": {
+                    "_model_weights_": "WEIGHT_DIFF",
+                    "scaffold_c_diff": "WEIGHT_DIFF"
+                }
             }
         },
         {
@@ -114,7 +133,7 @@
     "workflows": [
         {
             "id": "scatter_and_gather",
-            "name": "ScatterAndGather",
+            "name": "ScatterAndGatherScaffold",
             "args": {
                 "min_clients": "{min_clients}",
                 "num_rounds": "{num_rounds}",
@@ -122,7 +141,7 @@
                 "wait_time_after_min_received": 1,
                 "aggregator_id": "aggregator",
                 "persistor_id": "persistor",
-                "shareable_generator_id": "shareable_generator_fedopt",
+                "shareable_generator_id": "shareable_generator_base",
                 "train_task_name": "train",
                 "train_timeout": 0,
                 "task_check_period": 1

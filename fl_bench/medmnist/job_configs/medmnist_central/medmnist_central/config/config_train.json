@@ -4,13 +4,13 @@
     "fedprox_mu": 0.0,
     "batch_size": 64,
     "max_steps": 40000,
-    "model_name": "efficientnet_v2_s_pretrained_pt",
+    "model_name": "vit_b_16_myssl_short",
     "optimizer_args": {
         "class": "SGD",
         "momentum": 0.9,
         "nesterov": true,
         "weight_decay": 1e-05
     },
-    "local_steps": 800,
+    "local_steps": 8000,
     "use_half_precision": true
 }

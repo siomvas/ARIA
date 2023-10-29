@@ -24,7 +24,7 @@
             "path": "fl_bench.medmnist.src.medmnist_learner.MedMNISTLearner",
             "args": {
                 "config_train_name": "config_train.json",
-                "method": "fedopt",
+                "method": "fedavg",
                 "seed": 111,
                 "central": false,
                 "hyperion": true

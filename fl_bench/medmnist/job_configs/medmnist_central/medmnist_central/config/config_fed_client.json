@@ -27,7 +27,7 @@
                 "method": "fedavg",
                 "seed": 111,
                 "central": true,
-                "hyperion": false
+                "hyperion": true
             }
         }
     ]

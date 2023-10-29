@@ -6,7 +6,7 @@
     "hyperion": false,
     "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/fl_bench/medmnist/splits/combo/alpha=0.5_seed=111",
     "alpha": 0.5,
-    "model_path": "fl_bench.networks.medmnist_nets.densenet_121_pretrained_pt",
+    "model_path": "fl_bench.networks.medmnist_nets.resnet_18",
     "server": {
         "heart_beat_timeout": 600
     },

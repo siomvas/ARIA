@@ -9,7 +9,7 @@ alpha=$3
 agg=fedopt
 gpu=$4
 
-name="organamnist_alpha=${alpha}_${init}_${agg}_${model_name}"
+name="organamnist_alpha=${alpha}_${init}_${agg}_${model_name}_debug"
 
 python3 ${PWD}/src/setup.py \
 -job ${algorithms_dir}/medmnist_federated \
@@ -41,4 +41,4 @@ else
     echo "Directory ${RESULT_ROOT}/${name} does not exist."
 fi
 
-nvflare simulator ${algorithms_dir}/medmnist_federated -w ${RESULT_ROOT}/${name} -n 4 -gpu ${gpu},${gpu},${gpu},${gpu}
+nvflare simulator ${algorithms_dir}/medmnist_federated -w ${RESULT_ROOT}/${name} -n 4 -gpu ${gpu}

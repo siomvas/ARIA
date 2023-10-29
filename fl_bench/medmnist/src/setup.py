@@ -4,6 +4,7 @@ import json
 from fl_bench.medmnist.src.utils import read_json, write_json
 import uuid
 
+import nvflare.app_common.workflows.scatter_and_gather_scaffold
 
 def main():
     parser = argparse.ArgumentParser()
@@ -81,10 +82,36 @@ def main():
     # learner_path = map_func(args.dataset, args.learner)
     print(f"Setting method = {args.method}")
     client_config["components"][0]["args"]["method"] = args.method
+
+    # FedOpt requires a different shareable generator
     if args.method == 'fedopt':
         server_config["workflows"][0]["args"]["shareable_generator_id"] = "shareable_generator_fedopt"
     else:
         server_config["workflows"][0]["args"]["shareable_generator_id"] = "shareable_generator_base"
+
+    # SCAFFOLD requires:
+    # 1. A different trainer (automatic change via config)
+    # 2. the addition of task filters for vars that should not have control variates
+    # 3. Different aggregator
+    # 4. Different scatter and gather workflow
+
+    if args.method == 'scaffold':
+        server_config['task_result_filters'] = [{
+            "tasks": ["train", "submit_model", "validate"],
+            "filters": [{"name": "ExcludeVars", "args": {"exclude_vars": "(?:num_batches_tracked)|(?:attn.relative_position_index)"}}]
+        }]
+        server_config['components'][5]['args']['expected_data_kind'] = {
+            "_model_weights_": "WEIGHT_DIFF", "scaffold_c_diff": "WEIGHT_DIFF"
+        }
+        server_config["workflows"][0]["name"] = "ScatterAndGatherScaffold"
+
+    else:
+        server_config['task_result_filters'] = []
+        for i in [4, 5]:
+            if server_config['components'][i]['id'] == 'aggregator':
+                server_config['components'][i]['args']['expected_data_kind'] = "WEIGHT_DIFF"
+        server_config["workflows"][0]["name"] = "ScatterAndGather"
+
     job_name += f'_medmnist_{args.method}'
     # update seed
     print(f"Setting seed = {args.seed}")

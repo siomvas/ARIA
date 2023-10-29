@@ -12,7 +12,8 @@ from nvflare.apis.fl_constant import FLContextKey
 from nvflare.apis.fl_context import FLContext
 from nvflare.apis.shareable import ReturnCode, Shareable, make_reply
 from nvflare.app_common.abstract.learner_spec import Learner
-from nvflare.app_common.app_constant import (AppConstants, ModelName,
+from nvflare.app_common.app_constant import (AlgorithmConstants,
+                                             AppConstants, ModelName,
                                              ValidateType)
 from prettytable import PrettyTable
 from torch.utils.tensorboard.writer import SummaryWriter
@@ -95,6 +96,8 @@ class MedMNISTLearner(Learner):
             self.trainer = BaseTrainer(config_train, self.method)
         else:
             self.trainer = ScaffoldTrainer(config_train, self.method)
+            exclude_vars = ["num_batches_tracked", "attn.relative_position_index"]
+            self.trainer.scaffold_helper.init(model=self.model, exclude_vars=exclude_vars)
 
         self.validator = Validator()
 
@@ -106,7 +109,27 @@ class MedMNISTLearner(Learner):
         self.log_info(fl_ctx, f"Client identity: {fl_ctx.get_identity_name()}")
 
         if self.method == 'scaffold':
-            
+            dxo_collection = from_shareable(data)
+            if dxo_collection.data_kind != DataKind.COLLECTION:
+                self.log_error(
+                    fl_ctx,
+                    f"SCAFFOLD learner expected shareable to contain a collection of two DXOs "
+                    f"but got data kind {dxo_collection.data_kind}.",
+                )
+                return make_reply(ReturnCode.ERROR)
+            dxo_global_weights = dxo_collection.data.get(AppConstants.MODEL_WEIGHTS)
+            dxo_global_ctrl_weights = dxo_collection.data.get(AlgorithmConstants.SCAFFOLD_CTRL_GLOBAL)
+            if dxo_global_ctrl_weights is None:
+                self.log_error(fl_ctx, "DXO collection doesn't contain the SCAFFOLD controls!")
+                return make_reply(ReturnCode.EXECUTION_EXCEPTION)
+            # convert to tensor and load into c_global model
+            global_ctrl_weights = dxo_global_ctrl_weights.data
+            for k in global_ctrl_weights.keys():
+                global_ctrl_weights[k] = torch.as_tensor(global_ctrl_weights[k])
+            self.trainer.scaffold_helper.load_global_controls(weights=global_ctrl_weights)
+
+            # modify shareable to only contain global weights so normal training can proceed
+            data = dxo_global_weights.update_shareable(data)
 
         # update local model weights with received weights
         dxo = from_shareable(data)
@@ -188,6 +211,21 @@ class MedMNISTLearner(Learner):
             data=weight_diff,
             meta={MetaKey.NUM_STEPS_CURRENT_ROUND: self.local_steps},
         )
+
+        if self.method == 'scaffold':
+            # Create a DXO collection with weights and scaffold controls
+            dxo_weights_diff_ctrl = DXO(
+                data_kind=DataKind.WEIGHT_DIFF,
+                data=self.trainer.scaffold_helper.get_delta_controls(),
+                meta={MetaKey.NUM_STEPS_CURRENT_ROUND: self.local_steps},
+            )
+            collection_data = {
+                    AppConstants.MODEL_WEIGHTS: dxo,
+                    AlgorithmConstants.SCAFFOLD_CTRL_DIFF: dxo_weights_diff_ctrl,
+                }
+
+            dxo = DXO(data_kind=DataKind.COLLECTION, data=collection_data)
+
         return dxo.to_shareable()
 
     def validate(self, data, fl_ctx, abort_signal):
@@ -210,6 +248,12 @@ class MedMNISTLearner(Learner):
         except:
             self.log_error(fl_ctx, "Error when extracting DXO from shareable")
             return make_reply(ReturnCode.BAD_TASK_DATA)
+
+        # SCAFFOLD learner expects shareable to contain a collection of two DXOs
+        if dxo.data_kind == DataKind.COLLECTION:
+            assert self.method == "scaffold"
+            # strip out the scaffold controls
+            dxo = dxo.data.get(AppConstants.MODEL_WEIGHTS)
 
         if not dxo.data_kind == DataKind.WEIGHTS:
             self.log_exception(fl_ctx, f"DXO is of type {dxo.data_kind} but expected type WEIGHTS")

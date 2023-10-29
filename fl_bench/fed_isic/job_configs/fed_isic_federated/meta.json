@@ -1,0 +1,9 @@
+{
+    "name": "fed_isic_federated_efficientnet_v2_s_ssl_20_0.0005_200_fed_isic_scaffold",
+    "deploy_map": {
+        "fed_isic_federated": [
+            "@ALL"
+        ]
+    },
+    "min_clients": 6
+}

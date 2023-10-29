@@ -1,5 +1,5 @@
 {
-    "name": "medmnist_federated_convnext_small_pretrained_pt_50_0.01_200_alpha0.5_medmnist_fedopt",
+    "name": "medmnist_federated_vit_b_16_pretrained_pt_50_0.01_200_alpha0.5_medmnist_scaffold",
     "deploy_map": {
         "medmnist_federated": [
             "@ALL"

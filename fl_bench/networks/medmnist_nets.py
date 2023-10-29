@@ -9,6 +9,8 @@ from fl_bench.medmnist.src.utils import seed_everything
 model_dir = "/path/to/model_weights"
 torch.hub.set_dir(model_dir)
 
+ssl_model_dir = "/path/to/FL_bench/fl_bench/abdomen_ssl/models"
+
 NUM_CLASSES = 11
 
 # VGG
@@ -61,6 +63,16 @@ def resnet_18_pretrained_timm(seed):
         num_classes=NUM_CLASSES)
     os.environ['https_proxy'] = ''
     return bb
+
+
+def resnet_18_pretrained_ssl(seed):
+    seed_everything(seed)
+    model = tm.resnet18()
+    num_ftrs = model.fc.in_features
+    model.fc = nn.Linear(num_ftrs, NUM_CLASSES)
+    model.load_state_dict(torch.load(os.path.join(ssl_model_dir, "resnet_18.pth")))
+
+    return model
 
 
 def resnet_50(seed):
@@ -247,6 +259,16 @@ def swin_t_pretrained_pt(seed):
     return bb
 
 
+def swin_t_pretrained_ssl(seed):
+    seed_everything(seed)
+    bb = tm.swin_t()
+    num_ftrs = bb.head.in_features
+    bb.head = nn.Linear(num_ftrs, NUM_CLASSES)
+    bb.load_state_dict(torch.load(os.path.join(ssl_model_dir, "swin_t.pth")))
+
+    return bb
+
+
 # VIT
 
 
@@ -273,6 +295,42 @@ def vit_b_16_pretrained_ssl(seed):
     os.environ['https_proxy'] = 'http://proxy.example.org:3128'
     model = timm.create_model('vit_base_patch16_224.mae', pretrained=True, num_classes=NUM_CLASSES)
     os.environ['https_proxy'] = ''
+    return model
+
+
+def vit_b_16_pretrained_myssl(seed):
+    seed_everything()
+    model = torch.hub.load('facebookresearch/dino:main', 'dino_vitb16', pretrained=False)
+    model.head = nn.Linear(model.embed_dim, NUM_CLASSES)
+    # model.load_state_dict(torch.load(os.path.join(ssl_model_dir, "vit_b_16_2.pth")))
+
+    return model
+
+
+def vit_s_16_pretrained_myssl(seed):
+    seed_everything()
+    model = torch.hub.load('facebookresearch/dino:main', 'dino_vits16', pretrained=False)
+    model.head = nn.Linear(model.embed_dim, NUM_CLASSES)
+    model.load_state_dict(torch.load(os.path.join(ssl_model_dir, "vit_s_16_long_high_collapse.pth")))
+
+    return model
+
+
+def vit_s_16_pretrained_myssl_short(seed):
+    seed_everything()
+    model = torch.hub.load('facebookresearch/dino:main', 'dino_vits16', pretrained=False)
+    model.head = nn.Linear(model.embed_dim, NUM_CLASSES)
+    model.load_state_dict(torch.load(os.path.join(ssl_model_dir, "vit_s_16_short.pth")))
+
+    return model
+
+
+def vit_b_16_myssl_short(seed):
+    seed_everything()
+    model = torch.hub.load('facebookresearch/dino:main', 'dino_vitb16', pretrained=False)
+    model.head = nn.Linear(model.embed_dim, NUM_CLASSES)
+    model.load_state_dict(torch.load(os.path.join(ssl_model_dir, "vit_b_16_238.pth")))
+
     return model
 
 
