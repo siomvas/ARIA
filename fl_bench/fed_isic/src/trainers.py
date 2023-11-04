@@ -123,12 +123,14 @@ class BaseTrainer(object):
                 avg_loss / num_steps,
                 self.current_step / self.gradient_accumulation_steps
             )
-            post_train_acc = next(iter(self.validator.run(self.model, data_loader).values()))
-            self.logger.add_scalar(
-                "Accuracy/Post-Train Train Accuracy",
-                post_train_acc,
-                self.current_step / self.gradient_accumulation_steps
-            )
+            # Post-train accuracy every 5 rounds starting from the 5th round
+            if self.current_round % 5 == 0 and self.current_round > 4:
+                post_train_acc = next(iter(self.validator.run(self.model, data_loader).values()))
+                self.logger.add_scalar(
+                    "Accuracy/Post-Train Train Accuracy",
+                    post_train_acc,
+                    self.current_step / self.gradient_accumulation_steps
+                )
 
     def setup(self, model, logger, abort_signal):
         self.model = model
@@ -293,10 +295,11 @@ class ScaffoldTrainer(BaseTrainer):
                 c_local_para=c_local_para,
                 model_global=self.global_model,
             )
-            # Post-train accuracy
-            post_train_acc = next(iter(self.validator.run(self.model, data_loader).values()))
-            self.logger.add_scalar(
-                "Accuracy/Post-Train Train Accuracy",
-                post_train_acc,
-                self.current_step / self.gradient_accumulation_steps
-            )
+            # Post-train accuracy every 5 rounds starting from the 5th round
+            if self.current_round % 5 == 0 and self.current_round > 4:
+                post_train_acc = next(iter(self.validator.run(self.model, data_loader).values()))
+                self.logger.add_scalar(
+                    "Accuracy/Post-Train Train Accuracy",
+                    post_train_acc,
+                    self.current_step / self.gradient_accumulation_steps
+                )
