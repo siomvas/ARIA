@@ -2,8 +2,8 @@
     "format_version": 2,
     "min_clients": 1,
     "num_rounds": 2,
-    "seed": 42,
-    "model_path": "fl_bench.networks.fed_isic_nets.efficientnet_v2_s_ssl",
+    "seed": 24,
+    "model_path": "fl_bench.networks.fed_isic_nets.resnet_18_scratch",
     "server": {
         "heart_beat_timeout": 600
     },
@@ -115,5 +115,5 @@
             }
         }
     ],
-    "hyperion": true
+    "hyperion": false
 }

@@ -6,7 +6,7 @@ from fl_bench.fed_isic.src.utils import read_json, write_json
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-job", type=str, help="Path to job config.")
-    parser.add_argument("-method", type=str, default='fedavg', choices=['fedavg', 'fedprox', 'fedopt', 'scaffold'])
+    parser.add_argument("-method", type=str, default='fedavg', choices=['central', 'fedavg', 'fedprox', 'fedopt', 'scaffold'])
     parser.add_argument("-model_name", type=str, default=argparse.SUPPRESS)
     parser.add_argument("-num_rounds", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-local_steps", type=int, default=argparse.SUPPRESS)
@@ -60,7 +60,10 @@ def main():
     train_config["max_steps"] = args.num_rounds * args.local_steps
 
     # update method
-    # learner_path = map_func(args.dataset, args.learner)
+    # convert central to fedavg for config
+    if args.method == 'central':
+        args.method = 'fedavg'
+
     print(f"Setting method = {args.method}")
     client_config["components"][0]["args"]["method"] = args.method
 

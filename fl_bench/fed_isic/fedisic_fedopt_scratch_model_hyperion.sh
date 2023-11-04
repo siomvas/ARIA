@@ -11,7 +11,7 @@ name="fed_isic_${init}_fedopt_${model_name}"
 
 
 python3 ${PWD}/src/setup.py \
--job ${algorithms_dir}/fed_isic_federated \
+-job ${algorithms_dir}/fed_isic_federated_2 \
 -method fedopt \
 -num_rounds 20 \
 -lr 5e-4 \
@@ -23,21 +23,21 @@ python3 ${PWD}/src/setup.py \
 --use_hyperion_dirs \
 --opt_args '{"class": "Adam"}'
 
-# OVERWRITE CHECK
-if [ -d "${RESULT_ROOT}/${name}" ]; then
-    echo "Directory ${RESULT_ROOT}/${name} already exists."
-    read -p "Do you want to overwrite it? (Y/N) " choice
+# # OVERWRITE CHECK
+# if [ -d "${RESULT_ROOT}/${name}" ]; then
+#     echo "Directory ${RESULT_ROOT}/${name} already exists."
+#     read -p "Do you want to overwrite it? (Y/N) " choice
 
-    if [[ $choice == "Y" || $choice == "y" ]]; then
-        echo "Continuing..."
-    else
-        echo "Aborting..."
-        return 1
-    fi
+#     if [[ $choice == "Y" || $choice == "y" ]]; then
+#         echo "Continuing..."
+#     else
+#         echo "Aborting..."
+#         return 1
+#     fi
 
-else
-    echo "Directory ${RESULT_ROOT}/${name} does not exist."
-fi
+# else
+#     echo "Directory ${RESULT_ROOT}/${name} does not exist."
+# fi
 
-nvflare simulator ${algorithms_dir}/fed_isic_federated -w ${RESULT_ROOT}/${name} -n 6 -gpu ${gpu}
+nvflare simulator ${algorithms_dir}/fed_isic_federated_2 -w ${RESULT_ROOT}/${name} -n 6 -gpu ${gpu}
 

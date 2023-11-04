@@ -1,5 +1,8 @@
 {
     "format_version": 2,
+    "client": {
+        "communication_timeout": 120.0
+    },
     "executors": [
         {
             "tasks": [
@@ -25,9 +28,9 @@
             "args": {
                 "config_train_name": "config_train.json",
                 "method": "fedavg",
-                "seed": 42,
+                "seed": 24,
                 "central": true,
-                "hyperion": true
+                "hyperion": false
             }
         }
     ]

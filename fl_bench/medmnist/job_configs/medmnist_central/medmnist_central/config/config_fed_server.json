@@ -5,7 +5,7 @@
     "seed": 111,
     "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/fl_bench/medmnist/splits/combo/alpha=-1.0_seed=111",
     "alpha": -1.0,
-    "model_path": "fl_bench.networks.medmnist_nets.vit_b_16_myssl_short",
+    "model_path": "fl_bench.networks.medmnist_nets.vit_b_16_pretrained_ssl",
     "server": {
         "heart_beat_timeout": 600
     },

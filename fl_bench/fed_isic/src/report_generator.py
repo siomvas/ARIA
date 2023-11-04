@@ -39,6 +39,7 @@ class ReportGenerator(Widget):
 
         self.results_dir = Path(results_dir)
         self.report_path = Path(report_path)
+        self.final_avg = []
 
         if self.report_path.suffix not in ReportGenerator.ALLOWED_FILE_EXTENSIONS:
             raise ValueError(f"Report file extension must be be .yaml, .yml, or .json, got {self.report_path.suffix}")
@@ -66,6 +67,8 @@ class ReportGenerator(Widget):
                         self.val_results.append(
                             {"data_client": data_client, "model_owner": model_owner, "metrics": dxo.data}
                         )
+                        if model_owner == "SRV_server":
+                            self.final_avg.append(*dxo.data.values())
                     else:
                         self.log_error(
                             fl_ctx, f"Expected dxo of kind METRICS but got {dxo.data_kind}", fire_event=False
@@ -89,6 +92,9 @@ class ReportGenerator(Widget):
                     pretty_json_str = pprint.pformat(json.dumps(results), compact=True, indent=4).replace("'", '"')
                     f.write(pretty_json_str)
                     f.write("\n")
+                    f.write("Average Metrics \n")
+                    f.write(f'{self.final_avg} \n')
+                    f.write(f'{sum(self.final_avg) / len(self.final_avg)} \n')
             else:  # ".yaml" or ".yml"
                 yaml = YAML()
                 with open(output_file_path, "w") as f:

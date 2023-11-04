@@ -74,8 +74,32 @@ def vgg_11_pretrained_pt(seed):
 
 # RESNET
 
+# def resnet_18(seed, weights):
+#     seed_everything(seed)
+#     if weights == "scratch":
+#         bb = tm.resnet18()
+#         num_ftrs = bb.fc.in_features
+#         bb.fc = nn.Linear(num_ftrs, NUM_CLASSES)
+#     elif weights == "supervised":
+#         os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+#         bb = tm.resnet18(weights="IMAGENET1K_V1")
+#         os.environ['https_proxy'] = ''
+#         num_ftrs = bb.fc.in_features
+#         bb.fc = nn.Linear(num_ftrs, NUM_CLASSES)
+#     elif weights == "ssl":
+#         model = tm.resnet18()
+#         model.fc = nn.Linear(model.fc.in_features, NUM_CLASSES)
+#         model.load_state_dict(
+#             torch.load(
+#                 os.path.join(skin_ssl_model_dir,
+#                             "resnet_18.pth"
+#                             )
+#             )
+#         )
 
-def resnet_18(seed):
+#     return bb
+
+def resnet_18_scratch(seed):
     seed_everything(seed)
     bb = tm.resnet18()
     num_ftrs = bb.fc.in_features
@@ -83,7 +107,7 @@ def resnet_18(seed):
     return bb
 
 
-def resnet_18_pretrained_pt(seed):
+def resnet_18_supervised(seed):
     seed_everything(seed)
     os.environ['https_proxy'] = 'http://proxy.example.org:3128'
     bb = tm.resnet18(weights="IMAGENET1K_V1")
@@ -92,6 +116,19 @@ def resnet_18_pretrained_pt(seed):
     bb.fc = nn.Linear(num_ftrs, NUM_CLASSES)
     return bb
 
+def resnet_18_ssl(seed):
+    seed_everything(seed)
+    model = tm.resnet18()
+    model.fc = nn.Linear(model.fc.in_features, NUM_CLASSES)
+    model.load_state_dict(
+        torch.load(
+            os.path.join(skin_ssl_model_dir,
+                         "resnet_18.pth"
+                         )
+        )
+    )
+
+    return model
 
 def resnet_18_pretrained_timm(seed):
     seed_everything(seed)
@@ -121,6 +158,20 @@ def resnet_50_pretrained_pt(seed):
     bb.fc = nn.Linear(num_ftrs, NUM_CLASSES)
     return bb
 
+def resnet_50_pretrained_ssl(seed):
+    seed_everything(seed)
+    model = tm.resnet50()
+    model.fc = nn.Linear(model.fc.in_features, NUM_CLASSES)
+    model.load_state_dict(
+        torch.load(
+            os.path.join(skin_ssl_model_dir,
+                         "resnet_50.pth"
+                         )
+        )
+    )
+
+    return model
+
 
 def resnet_50_pretrained_timm(seed):
     seed_everything(seed)
@@ -132,6 +183,15 @@ def resnet_50_pretrained_timm(seed):
     os.environ['https_proxy'] = ''
     return bb
 
+
+def resnet_50_pretrained_dino(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    model = torch.hub.load('facebookresearch/dino:main', 'dino_resnet50',
+                        pretrained=True)
+    os.environ['https_proxy'] = ''
+    model.fc = nn.Linear(model.fc_in_features, NUM_CLASSES)
+    return model
 
 # DENSENETS
 
@@ -151,6 +211,21 @@ def densenet_121_pretrained_pt(seed):
     num_ftrs = bb.classifier.in_features
     bb.classifier = nn.Linear(num_ftrs, NUM_CLASSES)
     return bb
+
+
+def densenet_121_pretrained_ssl(seed):
+    seed_everything(seed)
+    model = tm.densenet121()
+    model.classifier = nn.Linear(model.classifier.in_features, NUM_CLASSES)
+    model.load_state_dict(
+        torch.load(
+            os.path.join(skin_ssl_model_dir,
+                         "densenet_121.pth"
+                         )
+        )
+    )
+
+    return model
 
 
 def densenet_169(seed):
@@ -190,6 +265,31 @@ def convnext_small_pretrained_pt(seed):
     bb.classifier[2] = nn.Linear(num_ftrs, NUM_CLASSES)
     return bb
 
+def convnext_small_pretrained_timm(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    bb = timm.create_model(
+        'convnext_small.fb_in1k',
+        pretrained=True,
+        num_classes=NUM_CLASSES)
+    os.environ['https_proxy'] = ''
+    return bb
+
+
+def convnext_small_pretrained_ssl(seed):
+    seed_everything(seed)
+    model = tm.convnext_small()
+    model.classifier[2] = nn.Linear(model.classifier[2].in_features, NUM_CLASSES)
+    model.load_state_dict(
+        torch.load(
+            os.path.join(skin_ssl_model_dir,
+                         "convnext_small.pth"
+                         )
+        )
+    )
+
+    return model
+
 # EFFICIENTNETv2 (better than ViT)
 
 
@@ -211,7 +311,7 @@ def efficientnet_v2_s_pretrained_pt(seed):
     return bb
 
 
-def efficientnet_v2_s_ssl(seed):
+def efficientnet_v2_s_pretrained_ssl(seed):
     seed_everything(seed)
     model = tm.efficientnet_v2_s()
     model.classifier[1] = nn.Linear(
@@ -247,6 +347,21 @@ def wide_resnet_50_2_pretrained_pt(seed):
     num_ftrs = bb.fc.in_features
     bb.fc = nn.Linear(num_ftrs, NUM_CLASSES)
     return bb
+
+
+def wide_resnet_50_2_pretrained_ssl(seed):
+    seed_everything(seed)
+    model = tm.wide_resnet50_2()
+    model.fc = nn.Linear(model.fc.in_features, NUM_CLASSES)
+    model.load_state_dict(
+        torch.load(
+            os.path.join(skin_ssl_model_dir,
+                         "wide_resnet_50_2.pth"
+                         )
+        )
+    )
+
+    return model
 
 
 # RESNEXT
@@ -314,6 +429,33 @@ def swin_t_pretrained_pt(seed):
     return bb
 
 
+def swin_t_pretrained_timm(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    bb = timm.create_model(
+        'swin_tiny_patch4_window7_224.ms_in1k',
+        pretrained=True,
+        num_classes=NUM_CLASSES
+    )
+    os.environ['https_proxy'] = ''
+    return bb
+
+
+def swin_t_pretrained_ssl(seed):
+    seed_everything(seed)
+    model = tm.swin_t()
+    model.head = nn.Linear(model.head.in_features, NUM_CLASSES)
+    model.load_state_dict(
+        torch.load(
+            os.path.join(skin_ssl_model_dir,
+                         "swin_t.pth"
+                         )
+        )
+    )
+
+    return model
+
+
 # VIT
 
 
@@ -357,16 +499,15 @@ def vit_b_16_pretrained_ssl(seed):
     return model
 
 
-def vit_b_14_pretrained_dino2(seed):
+def vit_b_16_pretrained_dino(seed):
     seed_everything(seed)
     os.environ['https_proxy'] = 'http://proxy.example.org:3128'
-    model = timm.create_model(
-        'vit_base_patch14_dinov2.lvd142m',
-        pretrained=True,
-        num_classes=NUM_CLASSES
-    )
+    model = torch.hub.load('facebookresearch/dino:main', 'dino_vitb16',
+                           pretrained=True)
+    model.head = nn.Linear(model.embed_dim, NUM_CLASSES)
     os.environ['https_proxy'] = ''
     return model
+
 
 # ConvMixer
 
@@ -396,3 +537,4 @@ def convmixer_pretrained(seed):
 # get model specific transforms (normalization, resize)
 # data_config = timm.data.resolve_model_data_config(model)
 # transforms = timm.data.create_transform(**data_config, is_training=False)
+

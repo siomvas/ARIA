@@ -70,6 +70,7 @@ class FedIsicDataModule():
 
         self.train_dataloader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=8, worker_init_fn=seed_worker, generator=g)
         self.val_dataloader = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False)
+        self.viz_dataloader = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=0, worker_init_fn=seed_worker, generator=g)
 
     def teardown(self):
         self.train_dataset = {}

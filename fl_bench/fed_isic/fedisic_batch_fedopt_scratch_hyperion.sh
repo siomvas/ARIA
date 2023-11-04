@@ -15,5 +15,5 @@ do
     if (( i % 2 != 0 )); then
         continue
     fi
-    source fedisic_fedopt_scratch_model_hyperion.sh ${arr[i]} ${arr[i+1]} 0,0,0,1,1,1
+    source fedisic_fedopt_scratch_model_hyperion.sh ${arr[i]} ${arr[i+1]} 2,2,2,2,2,2
 done

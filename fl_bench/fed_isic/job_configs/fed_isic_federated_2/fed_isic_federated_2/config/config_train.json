@@ -1,0 +1,12 @@
+{
+    "learning_rate": 0.0005,
+    "fedprox_mu": 0.0,
+    "batch_size": 64,
+    "max_steps": 4000,
+    "model_name": "vit_b_16_pretrained_ssl",
+    "optimizer_args": {
+        "class": "Adam"
+    },
+    "local_steps": 200,
+    "use_half_precision": true
+}

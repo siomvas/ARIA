@@ -1,5 +1,5 @@
 {
-    "name": "fed_isic_central_efficientnet_v2_s_ssl_2_0.0005_2910_fed_isic_fedavg",
+    "name": "fed_isic_central_resnet_18_scratch_2_0.0005_8730_fed_isic_fedavg",
     "deploy_map": {
         "fed_isic_central": [
             "@ALL"

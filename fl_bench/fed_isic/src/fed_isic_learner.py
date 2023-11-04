@@ -197,7 +197,7 @@ class FedISICLearner(Learner):
             self.writer.add_scalar(f"Accuracy/Post-Train Val Accuracy", v, self.trainer.current_step)
         self.log_info(fl_ctx, str(table))
 
-        # Save checkpoint if necessary
+        # Save checkpoint if necessaryy
         if self.best_metric < metrics[self.key_metric]:
             self.best_metric = metrics[self.key_metric]
             self.trainer.save_checkpoint(self.best_model_path, self.model)
