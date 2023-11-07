@@ -2,11 +2,11 @@
     "learning_rate": 0.0005,
     "fedprox_mu": 0.0,
     "batch_size": 64,
-    "max_steps": 17460,
-    "model_name": "resnet_18_scratch",
+    "max_steps": 5820,
+    "model_name": "wide_resnet_50_2_ssl",
     "optimizer_args": {
         "class": "Adam"
     },
-    "local_steps": 8730,
+    "local_steps": 2910,
     "use_half_precision": true
 }

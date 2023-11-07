@@ -1,12 +1,12 @@
 {
     "format_version": 2,
     "min_clients": 4,
-    "num_rounds": 50,
-    "seed": 111,
-    "hyperion": false,
-    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/fl_bench/medmnist/splits/combo/alpha=0.5_seed=111",
-    "alpha": 0.5,
-    "model_path": "fl_bench.networks.medmnist_nets.resnet_18",
+    "num_rounds": 25,
+    "seed": 42,
+    "hyperion": true,
+    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/fl_bench/medmnist/splits/combo/alpha=0.2_seed=42",
+    "alpha": 0.2,
+    "model_path": "fl_bench.networks.medmnist_nets.resnet50_pretrained_dino",
     "server": {
         "heart_beat_timeout": 600
     },
@@ -121,7 +121,7 @@
                 "wait_time_after_min_received": 1,
                 "aggregator_id": "aggregator",
                 "persistor_id": "persistor",
-                "shareable_generator_id": "shareable_generator_fedopt",
+                "shareable_generator_id": "shareable_generator_base",
                 "train_task_name": "train",
                 "train_timeout": 0,
                 "task_check_period": 1

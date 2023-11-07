@@ -1,5 +1,5 @@
 {
-    "name": "medmnist_central_vit_b_16_pretrained_ssl_5_0.01_8000_alpha-1.0_medmnist_fedavg",
+    "name": "medmnist_central_vit_b_16_pretrained_ssl_5_0.01_4000_alpha-1.0_medmnist_fedavg",
     "deploy_map": {
         "medmnist_central": [
             "@ALL"

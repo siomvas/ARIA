@@ -1,9 +1,0 @@
-{
-    "name": "cifar10_scaffold_num_rounds=250_lr=0.01_epochs=4_model=swin_alpha=0.6",
-    "deploy_map": {
-        "cifar10_scaffold": [
-            "@ALL"
-        ]
-    },
-    "min_clients": 10
-}

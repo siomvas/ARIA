@@ -31,4 +31,4 @@ python3 ${PWD}/src/setup.py \
 --opt_args '{"class": "Adam"}'
 
 
-nvflare simulator ${algorithms_dir}/fed_isic_${config} -w ${RESULT_ROOT}/${name} -n ${num_clients} -t ${num_clients} -gpu ${gpu}
+nvflare simulator ${algorithms_dir}/fed_isic_${config} -w ${RESULT_ROOT}/${name} -n ${num_clients} -gpu ${gpu}

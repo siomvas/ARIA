@@ -2,14 +2,30 @@
     "format_version": 2,
     "min_clients": 6,
     "num_rounds": 20,
-    "seed": 24,
+    "seed": 42,
     "hyperion": false,
-    "model_path": "fl_bench.networks.fed_isic_nets.resnet_18_scratch",
+    "model_path": "fl_bench.networks.fed_isic_nets.eca_nfnet_l1",
     "server": {
         "heart_beat_timeout": 600
     },
     "task_data_filters": [],
-    "task_result_filters": [],
+    "task_result_filters": [
+        {
+            "tasks": [
+                "train",
+                "submit_model",
+                "validate"
+            ],
+            "filters": [
+                {
+                    "name": "ExcludeVars",
+                    "args": {
+                        "exclude_vars": "(?:num_batches_tracked)|(?:attn.relative_position_index)"
+                    }
+                }
+            ]
+        }
+    ],
     "components": [
         {
             "id": "persistor",
@@ -59,7 +75,10 @@
             "id": "aggregator",
             "name": "InTimeAccumulateWeightedAggregator",
             "args": {
-                "expected_data_kind": "WEIGHT_DIFF"
+                "expected_data_kind": {
+                    "_model_weights_": "WEIGHT_DIFF",
+                    "scaffold_c_diff": "WEIGHT_DIFF"
+                }
             }
         },
         {
@@ -101,7 +120,7 @@
     "workflows": [
         {
             "id": "scatter_and_gather",
-            "name": "ScatterAndGather",
+            "name": "ScatterAndGatherScaffold",
             "args": {
                 "min_clients": "{min_clients}",
                 "num_rounds": "{num_rounds}",

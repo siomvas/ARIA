@@ -1,985 +1,640 @@
 import torch
 import torch.nn as nn
-from types import SimpleNamespace
-import torch.nn.functional as F
-import torch.nn.init as init
+import os
 import timm
-from collections import OrderedDict
-from vit_pytorch import SimpleViT
+import torchvision.models as tm
+from timm.models.vision_transformer import VisionTransformer, _cfg
+from timm.layers import BatchNormAct2d, LayerNormAct2d, LayerNorm2d
+
+from fl_bench.fed_isic.src.utils import seed_everything
+from functools import partial
 
 
-class SimpleCNN_MNIST(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.conv1 = nn.Conv2d(1, 32, 3)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(32, 64, 3)
-        self.fc1 = nn.Linear(64 * 3 * 3, 10)
+model_dir = "/path/to/model_weights"
+torch.hub.set_dir(model_dir)
 
-    def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = torch.flatten(x, 1)  # flatten all dimensions except batch
-        x = self.fc1(x)
-        return x
+NUM_CLASSES = 10
 
 
-class SimpleCNN(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)
-        self.conv2 = nn.Conv2d(6, 16, 5)
-        self.fc1 = nn.Linear(16 * 5 * 5, 120)
-        self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
-
-    def forward(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = torch.flatten(x, 1)  # flatten all dimensions except batch
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
-
-    def rep_and_out(self, x):
-        x = self.pool(F.relu(self.conv1(x)))
-        x = self.pool(F.relu(self.conv2(x)))
-        x = torch.flatten(x, 1)  # flatten all dimensions except batch
-        x = F.relu(self.fc1(x))
-        x = self.fc2(x)
-        features = x
-        x = F.relu(x)
-        x = self.fc3(x)
-        return features, x
+# VGG
 
 
-class ModerateCNN_moon(nn.Module):
-    def __init__(self):
-        super(ModerateCNN_moon, self).__init__()
-        self.conv_layer = nn.Sequential(
-            # Conv Layer block 1
-            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            # Conv Layer block 2
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Dropout2d(p=0.05),
-            # Conv Layer block 3
-            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
+def vgg_11(seed):
+    seed_everything(seed)
+    bb = tm.vgg11()
+    num_ftrs = bb.classifier[6].in_features
+    bb.classifier[6] = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+
+def vgg_11_pretrained_pt(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    bb = tm.vgg11_bn(weights="IMAGENET1K_V1")
+    os.environ['https_proxy'] = ''
+    num_ftrs = bb.classifier[6].in_features
+    bb.classifier[6] = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+# RESNET
+
+def resnet_18_scratch(seed):
+    seed_everything(seed)
+    bb = tm.resnet18()
+    num_ftrs = bb.fc.in_features
+    bb.fc = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+
+def resnet_18_supervised(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    bb = tm.resnet18(weights="IMAGENET1K_V1")
+    os.environ['https_proxy'] = ''
+    num_ftrs = bb.fc.in_features
+    bb.fc = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+
+def resnet_18_pretrained_timm(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    bb = timm.create_model(
+        'resnet18.a1_in1k',
+        pretrained=True,
+        num_classes=NUM_CLASSES)
+    os.environ['https_proxy'] = ''
+    return bb
+
+
+def resnet_50(seed):
+    seed_everything(seed)
+    bb = tm.resnet50()
+    num_ftrs = bb.fc.in_features
+    bb.fc = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+resnet_50_scratch = resnet_50
+
+def resnet_50_pretrained_pt(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    bb = tm.resnet50(weights="IMAGENET1K_V2")
+    os.environ['https_proxy'] = ''
+    num_ftrs = bb.fc.in_features
+    bb.fc = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+resnet_50_supervised = resnet_50_pretrained_pt
+
+
+
+def resnet_50_pretrained_timm(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    bb = timm.create_model(
+        'resnet50.a1_in1k',
+        pretrained=True,
+        num_classes=NUM_CLASSES)
+    os.environ['https_proxy'] = ''
+    return bb
+
+
+def resnet_50_pretrained_dino(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    model = torch.hub.load('facebookresearch/dino:main', 'dino_resnet50',
+                        pretrained=True)
+    os.environ['https_proxy'] = ''
+    model.fc = nn.Linear(2048, NUM_CLASSES)
+    return model
+
+def resnet_50_pretrained_mocov3(seed):
+    seed_everything(seed)
+    model = tm.resnet50()
+    checkpoint = torch.load(f'{model_dir}/r-50-1000ep.pth.tar', map_location="cpu")
+    state_dict = checkpoint['state_dict']
+
+    for k in list(state_dict.keys()):
+        # retain only base_encoder up to before the embedding layer
+        if k.startswith('module.base_encoder') and not k.startswith('module.base_encoder.%s' % 'fc'):
+            # remove prefix
+            state_dict[k[len("module.base_encoder."):]] = state_dict[k]
+        # delete renamed or unused k
+        del state_dict[k]
+
+    model.load_state_dict(state_dict, strict=False)
+    model.fc = nn.Linear(model.fc.in_features, NUM_CLASSES)
+    return model
+
+# DENSENETS
+
+def densenet_121(seed):
+    seed_everything(seed)
+    bb = tm.densenet121()
+    num_ftrs = bb.classifier.in_features
+    bb.classifier = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+densenet_121_scratch = densenet_121
+
+def densenet_121_pretrained_pt(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    bb = tm.densenet121(weights="IMAGENET1K_V1")
+    os.environ['https_proxy'] = ''
+    num_ftrs = bb.classifier.in_features
+    bb.classifier = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+densenet_121_supervised = densenet_121_pretrained_pt
+
+
+def densenet_169(seed):
+    seed_everything(seed)
+    bb = tm.densenet169()
+    num_ftrs = bb.classifier.in_features
+    bb.classifier = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+
+def densenet_169_pretrained_pt(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    bb = tm.densenet169(weights="IMAGENET1K_V1")
+    os.environ['https_proxy'] = ''
+    num_ftrs = bb.classifier.in_features
+    bb.classifier = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+
+# CONVNEXT
+
+def convnext_small(seed):
+    seed_everything(seed)
+    bb = tm.convnext_small()
+    num_ftrs = bb.classifier[2].in_features
+    bb.classifier[2] = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+convnext_small_scratch = convnext_small
+
+def convnext_small_pretrained_pt(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    bb = tm.convnext_small(weights="IMAGENET1K_V1")
+    os.environ['https_proxy'] = ''
+    num_ftrs = bb.classifier[2].in_features
+    bb.classifier[2] = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+convnext_small_supervised = convnext_small_pretrained_pt
+
+def convnext_small_pretrained_timm(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    bb = timm.create_model(
+        'convnext_small.fb_in1k',
+        pretrained=True,
+        num_classes=NUM_CLASSES)
+    os.environ['https_proxy'] = ''
+    return bb
+
+
+def convnext_small_pretrained_ssl(seed):
+    seed_everything(seed)
+    model = tm.convnext_small()
+    model.classifier[2] = nn.Linear(model.classifier[2].in_features, NUM_CLASSES)
+    model.load_state_dict(
+        torch.load(
+            os.path.join(ssl_model_dir,
+                         "convnext_small.pth"
+                         )
         )
+    )
 
-        self.fc_layer = nn.Sequential(
-            nn.Dropout(p=0.1),
-            # nn.Linear(4096, 1024),
-            nn.Linear(4096, 512),
-            nn.ReLU(inplace=True),
-            # nn.Linear(1024, 512),
-            nn.Linear(512, 512),
-            nn.ReLU(inplace=True),
-            nn.Dropout(p=0.1),
-            nn.Linear(512, 10),
-        )
-
-    def forward(self, x):
-        x = self.conv_layer(x)
-        x = x.view(x.size(0), -1)
-        x = self.fc_layer(x)
-        return x
-    
-    def rep_and_out(self, x):
-        x = self.conv_layer(x)
-        x = self.fc_layer[:-1](x)
-        features = x
-        x = self.fc_layer[-1](x)
-        return features, x
-
-
-# FedSAM
-# c=64 k=5 ReLU -> MaxPool
-# c=64 k=5 ReLU -> MaxPool
-# FC n=384
-# FC n=192
-class ClientModel(nn.Module):
-    def __init__(self, num_classes=10):
-        super(ClientModel, self).__init__()
-        self.num_classes = num_classes
-
-        self.layer1 = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=5),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2),
-        )
-
-        self.layer2 = nn.Sequential(
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=5),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2),
-        )
-
-        self.classifier = nn.Sequential(
-            nn.Linear(64 * 5 * 5, 384),
-            nn.ReLU(),
-            nn.Linear(384, 192),
-            nn.ReLU(),
-            nn.Linear(192, self.num_classes),
-        )
-
-    def forward(self, x):
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = torch.reshape(x, (x.shape[0], -1))
-        x = self.classifier(x)
-        return x
-
-
-# Wide Res Net from SAM repo
-
-
-class BasicUnit(nn.Module):
-    def __init__(self, channels: int, dropout: float):
-        super(BasicUnit, self).__init__()
-        self.block = nn.Sequential(
-            OrderedDict(
-                [
-                    ("0_normalization", nn.BatchNorm2d(channels)),
-                    ("1_activation", nn.ReLU(inplace=True)),
-                    (
-                        "2_convolution",
-                        nn.Conv2d(
-                            channels, channels, (3, 3), stride=1, padding=1, bias=False
-                        ),
-                    ),
-                    ("3_normalization", nn.BatchNorm2d(channels)),
-                    ("4_activation", nn.ReLU(inplace=True)),
-                    ("5_dropout", nn.Dropout(dropout, inplace=True)),
-                    (
-                        "6_convolution",
-                        nn.Conv2d(
-                            channels, channels, (3, 3), stride=1, padding=1, bias=False
-                        ),
-                    ),
-                ]
-            )
-        )
-
-    def forward(self, x):
-        return x + self.block(x)
-
-
-class DownsampleUnit(nn.Module):
-    def __init__(
-        self, in_channels: int, out_channels: int, stride: int, dropout: float
-    ):
-        super(DownsampleUnit, self).__init__()
-        self.norm_act = nn.Sequential(
-            OrderedDict(
-                [
-                    ("0_normalization", nn.BatchNorm2d(in_channels)),
-                    ("1_activation", nn.ReLU(inplace=True)),
-                ]
-            )
-        )
-        self.block = nn.Sequential(
-            OrderedDict(
-                [
-                    (
-                        "0_convolution",
-                        nn.Conv2d(
-                            in_channels,
-                            out_channels,
-                            (3, 3),
-                            stride=stride,
-                            padding=1,
-                            bias=False,
-                        ),
-                    ),
-                    ("1_normalization", nn.BatchNorm2d(out_channels)),
-                    ("2_activation", nn.ReLU(inplace=True)),
-                    ("3_dropout", nn.Dropout(dropout, inplace=True)),
-                    (
-                        "4_convolution",
-                        nn.Conv2d(
-                            out_channels,
-                            out_channels,
-                            (3, 3),
-                            stride=1,
-                            padding=1,
-                            bias=False,
-                        ),
-                    ),
-                ]
-            )
-        )
-        self.downsample = nn.Conv2d(
-            in_channels, out_channels, (1, 1), stride=stride, padding=0, bias=False
-        )
-
-    def forward(self, x):
-        x = self.norm_act(x)
-        return self.block(x) + self.downsample(x)
-
-
-class Block_wide(nn.Module):
-    def __init__(
-        self,
-        in_channels: int,
-        out_channels: int,
-        stride: int,
-        depth: int,
-        dropout: float,
-    ):
-        super(Block_wide, self).__init__()
-        self.block = nn.Sequential(
-            DownsampleUnit(in_channels, out_channels, stride, dropout),
-            *(BasicUnit(out_channels, dropout) for _ in range(depth))
-        )
-
-    def forward(self, x):
-        return self.block(x)
-
-
-class WideResNet(nn.Module):
-    def __init__(
-        self,
-        depth: int,
-        width_factor: int,
-        dropout: float = 0.0,
-        in_channels: int = 3,
-        labels: int = 10,
-    ):
-        super(WideResNet, self).__init__()
-
-        self.filters = [
-            16,
-            1 * 16 * width_factor,
-            2 * 16 * width_factor,
-            4 * 16 * width_factor,
-        ]
-        self.block_depth = (depth - 4) // (3 * 2)
-
-        self.f = nn.Sequential(
-            OrderedDict(
-                [
-                    (
-                        "0_convolution",
-                        nn.Conv2d(
-                            in_channels,
-                            self.filters[0],
-                            (3, 3),
-                            stride=1,
-                            padding=1,
-                            bias=False,
-                        ),
-                    ),
-                    (
-                        "1_block",
-                        Block_wide(
-                            self.filters[0],
-                            self.filters[1],
-                            1,
-                            self.block_depth,
-                            dropout,
-                        ),
-                    ),
-                    (
-                        "2_block",
-                        Block_wide(
-                            self.filters[1],
-                            self.filters[2],
-                            2,
-                            self.block_depth,
-                            dropout,
-                        ),
-                    ),
-                    (
-                        "3_block",
-                        Block_wide(
-                            self.filters[2],
-                            self.filters[3],
-                            2,
-                            self.block_depth,
-                            dropout,
-                        ),
-                    ),
-                    ("4_normalization", nn.BatchNorm2d(self.filters[3])),
-                    ("5_activation", nn.ReLU(inplace=True)),
-                    ("6_pooling", nn.AvgPool2d(kernel_size=8)),
-                    ("7_flattening", nn.Flatten()),
-                    (
-                        "8_classification",
-                        nn.Linear(in_features=self.filters[3], out_features=labels),
-                    ),
-                ]
-            )
-        )
-
-        self._initialize()
-
-    def _initialize(self):
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(
-                    m.weight.data, mode="fan_in", nonlinearity="relu"
-                )
-                if m.bias is not None:
-                    m.bias.data.zero_()
-            elif isinstance(m, nn.BatchNorm2d):
-                m.weight.data.fill_(1)
-                m.bias.data.zero_()
-            elif isinstance(m, nn.Linear):
-                m.weight.data.zero_()
-                m.bias.data.zero_()
-
-    def forward(self, x):
-        return self.f(x)
-
-    def rep_and_out(self, x):
-        x = self.f[:-1](x)
-        features = x
-        x = self.f[-1](x)
-        return features, x
-
-
-def wideresnet_16_8_moon():
-    return WideResNet(depth=16, width_factor=8, dropout=0, in_channels=3, labels=10)
-
-
-# MobileNet from kuangliu
-
-
-class Block(nn.Module):
-    """expand + depthwise + pointwise"""
-
-    def __init__(self, in_planes, out_planes, expansion, stride):
-        super(Block, self).__init__()
-        self.stride = stride
-
-        planes = expansion * in_planes
-        self.conv1 = nn.Conv2d(
-            in_planes, planes, kernel_size=1, stride=1, padding=0, bias=False
-        )
-        self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(
-            planes,
-            planes,
-            kernel_size=3,
-            stride=stride,
-            padding=1,
-            groups=planes,
-            bias=False,
-        )
-        self.bn2 = nn.BatchNorm2d(planes)
-        self.conv3 = nn.Conv2d(
-            planes, out_planes, kernel_size=1, stride=1, padding=0, bias=False
-        )
-        self.bn3 = nn.BatchNorm2d(out_planes)
-
-        self.shortcut = nn.Sequential()
-        if stride == 1 and in_planes != out_planes:
-            self.shortcut = nn.Sequential(
-                OrderedDict(
-                [
-                    ('short_conv', nn.Conv2d(in_planes,
-                                             out_planes,
-                                             kernel_size=1,
-                                             stride=1,
-                                             padding=0,
-                                             bias=False)), 
-                    ('short_bn', nn.BatchNorm2d(out_planes))
-                ]))
-
-    def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = F.relu(self.bn2(self.conv2(out)))
-        out = self.bn3(self.conv3(out))
-        out = out + self.shortcut(x) if self.stride == 1 else out
-        return out
-
-
-class MobileNetv2(nn.Module):
-    # (expansion, out_planes, num_blocks, stride)
-    cfg = [
-        (1, 16, 1, 1),
-        (6, 24, 2, 1),  # NOTE: change stride 2 -> 1 for CIFAR10
-        (6, 32, 3, 2),
-        (6, 64, 4, 2),
-        (6, 96, 3, 1),
-        (6, 160, 3, 2),
-        (6, 320, 1, 1),
-    ]
-
-    def __init__(self, num_classes=10):
-        super(MobileNetv2, self).__init__()
-        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(32)
-        self.layers = self._make_layers(in_planes=32)
-        self.conv2 = nn.Conv2d(
-            320, 1280, kernel_size=1, stride=1, padding=0, bias=False
-        )
-        self.bn2 = nn.BatchNorm2d(1280)
-        self.classifier = nn.Linear(1280, num_classes)
-        self.avg_pool2d = nn.AdaptiveAvgPool2d((1, 1))
-
-    def _make_layers(self, in_planes):
-        layers = []
-        for expansion, out_planes, num_blocks, stride in self.cfg:
-            strides = [stride] + [1] * (num_blocks - 1)
-            for stride in strides:
-                layers.append(Block(in_planes, out_planes, expansion, stride))
-                in_planes = out_planes
-        return nn.Sequential(*layers)
-
-    def forward(self, x, return_features=False, return_logits=True):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = self.layers(out)
-        out = F.relu(self.bn2(self.conv2(out)))
-        # NOTE: change pooling kernel_size 7 -> 4 for CIFAR10
-        # out = F.avg_pool2d(out, 4)
-        out = self.avg_pool2d(out)
-
-        features = out.view(out.size(0), -1)
-
-        if not return_logits:
-            return features
-
-        out = self.classifier(features)
-        if return_features:
-            return features, out
-        else:
-            return out
-
-    def rep_and_out(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = self.layers(out)
-        out = F.relu(self.bn2(self.conv2(out)))
-        out = self.avg_pool2d(out)
-        out = out.view(out.size(0), -1)
-        features = out
-        out = self.classifier(out)
-        return features, out
-
-
-def mobilenetv2_moon(num_classes):
-    return MobileNetv2(num_classes=num_classes)
-
-
-# ResNets from Bytedance
-
-
-def _weights_init(m):
-    classname = m.__class__.__name__
-    if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
-        init.kaiming_normal_(m.weight)
-
-
-class LambdaLayer(nn.Module):
-    def __init__(self, lambd):
-        super(LambdaLayer, self).__init__()
-        self.lambd = lambd
-
-    def forward(self, x):
-        return self.lambd(x)
-
-
-class BasicBlock(nn.Module):
-    expansion = 1
-
-    def __init__(self, in_planes, planes, stride=1, option="A"):
-        super(BasicBlock, self).__init__()
-        self.conv1 = nn.Conv2d(
-            in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
-        )
-        self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(
-            planes, planes, kernel_size=3, stride=1, padding=1, bias=False
-        )
-        self.bn2 = nn.BatchNorm2d(planes)
-
-        self.shortcut = nn.Sequential()
-        if stride != 1 or in_planes != planes:
-            if option == "A":
-                """
-                For CIFAR10 ResNet paper uses option A.
-                """
-                self.shortcut = LambdaLayer(
-                    lambda x: F.pad(
-                        x[:, :, ::2, ::2],
-                        (0, 0, 0, 0, planes // 4, planes // 4),
-                        "constant",
-                        0,
-                    )
-                )
-            elif option == "B":
-                self.shortcut = nn.Sequential(
-                    OrderedDict([
-                        ('short_conv',
-                         nn.Conv2d(in_planes, self.expansion * planes,
-                                   kernel_size=1, stride=stride, bias=False)),
-                        ('short_norm', nn.BatchNorm2d(self.expansion * planes))
-                        ])
-                )
-
-    def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = self.bn2(self.conv2(out))
-        out += self.shortcut(x)
-        out = F.relu(out)
-        return out
-
-
-class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
-        super(ResNet, self).__init__()
-        self.in_planes = 16
-
-        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(16)
-        self.layer1 = self._make_layer(block, 16, num_blocks[0], stride=1)
-        self.layer2 = self._make_layer(block, 32, num_blocks[1], stride=2)
-        self.layer3 = self._make_layer(block, 64, num_blocks[2], stride=2)
-        self.classifier = nn.Linear(64, num_classes)
-
-        self.apply(_weights_init)
-
-    def _make_layer(self, block, planes, num_blocks, stride):
-        strides = [stride] + [1] * (num_blocks - 1)
-        layers = []
-        for stride in strides:
-            layers.append(block(self.in_planes, planes, stride, option="A"))
-            self.in_planes = planes * block.expansion
-
-        return nn.Sequential(*layers)
-
-    def forward(self, x, return_features=False):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = F.avg_pool2d(out, out.size()[3])
-        out = out.view(out.size(0), -1)
-        features = out
-        out = self.classifier(out)
-        if return_features:
-            return out, features
-        else:
-            return out
-
-    def rep_and_out(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = F.avg_pool2d(out, out.size()[3])
-        out = out.view(out.size(0), -1)
-        features = out
-        out = self.classifier(out)
-        return out, features
-
-
-# This is a wider version of resnet, e.g., resnet18.
-class ResNetWider(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
-        super(ResNetWider, self).__init__()
-        self.in_planes = 64
-
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
-        self.norm1 = nn.BatchNorm2d(64)
-        self.layer1 = self._make_layer(block, 64, num_blocks[0], stride=1)
-        self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
-        self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
-        self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
-        self.classifier = nn.Linear(512 * block.expansion, num_classes)
-
-    def _make_layer(self, block, planes, num_blocks, stride):
-        strides = [stride] + [1] * (num_blocks - 1)
-        layers = []
-        for stride in strides:
-            layers.append(block(self.in_planes, planes, stride, option="B"))
-            self.in_planes = planes * block.expansion
-        return nn.Sequential(*layers)
-
-    def forward(self, x, return_features=False):
-        out = F.relu(self.norm1(self.conv1(x)))
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = self.layer4(out)
-        out = F.avg_pool2d(out, 4)
-        out = out.view(out.size(0), -1)
-        features = out
-        out = self.classifier(out)
-        if return_features:
-            return out, features
-        else:
-            return out
-
-    def rep_and_out(self, x):
-        out = F.relu(self.norm1(self.conv1(x)))
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = self.layer4(out)
-        out = F.avg_pool2d(out, 4)
-        out = out.view(out.size(0), -1)
-        features = out
-        out = self.classifier(out)
-        return out, features
-
-
-def resnet20_moon(num_classes=10):
-    return ResNet(BasicBlock, [3, 3, 3], num_classes=num_classes)
-
-
-def resnet32(num_classes=10):
-    return ResNet(BasicBlock, [5, 5, 5], num_classes=num_classes)
-
-
-def resnet18_moon(num_classes=10):
-    return ResNetWider(BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
-
-
-# DenseNet from pytorch lightning
-act_fn_by_name = {
-    "tanh": nn.Tanh,
-    "relu": nn.ReLU,
-    "leakyrelu": nn.LeakyReLU,
-    "gelu": nn.GELU,
-}
-
-
-class DenseLayer(nn.Module):
-    def __init__(self, c_in, bn_size, growth_rate, act_fn):
-        """
-        Inputs:
-            c_in - Number of input channels
-            bn_size - Bottleneck size (factor of growth rate) for the output of the 1x1 convolution. Typically between 2 and 4.
-            growth_rate - Number of output channels of the 3x3 convolution
-            act_fn - Activation class constructor (e.g. nn.ReLU)
-        """
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.BatchNorm2d(c_in),
-            act_fn(),
-            nn.Conv2d(c_in, bn_size * growth_rate, kernel_size=1, bias=False),
-            nn.BatchNorm2d(bn_size * growth_rate),
-            act_fn(),
-            nn.Conv2d(
-                bn_size * growth_rate, growth_rate, kernel_size=3, padding=1, bias=False
-            ),
-        )
-
-    def forward(self, x):
-        out = self.net(x)
-        out = torch.cat([out, x], dim=1)
-        return out
-
-
-class DenseBlock(nn.Module):
-    def __init__(self, c_in, num_layers, bn_size, growth_rate, act_fn):
-        """
-        Inputs:
-            c_in - Number of input channels
-            num_layers - Number of dense layers to apply in the block
-            bn_size - Bottleneck size to use in the dense layers
-            growth_rate - Growth rate to use in the dense layers
-            act_fn - Activation function to use in the dense layers
-        """
-        super().__init__()
-        layers = []
-        for layer_idx in range(num_layers):
-            # Input channels are original plus the feature maps from previous layers
-            layer_c_in = c_in + layer_idx * growth_rate
-            layers.append(
-                DenseLayer(
-                    c_in=layer_c_in,
-                    bn_size=bn_size,
-                    growth_rate=growth_rate,
-                    act_fn=act_fn,
-                )
-            )
-        self.block = nn.Sequential(*layers)
-
-    def forward(self, x):
-        out = self.block(x)
-        return out
-
-
-class TransitionLayer(nn.Module):
-    def __init__(self, c_in, c_out, act_fn):
-        super().__init__()
-        self.transition = nn.Sequential(
-            OrderedDict([
-                ("trans_norm", nn.BatchNorm2d(c_in)),
-                ("trans_act", act_fn()),
-                ("trans_conv", nn.Conv2d(c_in, c_out, kernel_size=1, bias=False)),
-                ("trans_pool", nn.AvgPool2d(kernel_size=2, stride=2))
-            ])
-        )
-
-    def forward(self, x):
-        return self.transition(x)
-
-
-class DenseNet(nn.Module):
-    def __init__(
-        self,
-        num_classes=10,
-        num_layers=[6, 6, 6, 6],
-        bn_size=2,
-        growth_rate=16,
-        act_fn_name="relu",
-        **kwargs
-    ):
-        super().__init__()
-        self.hparams = SimpleNamespace(
-            num_classes=num_classes,
-            num_layers=num_layers,
-            bn_size=bn_size,
-            growth_rate=growth_rate,
-            act_fn_name=act_fn_name,
-            act_fn=act_fn_by_name[act_fn_name],
-        )
-        self._create_network()
-        self._init_params()
-
-    def _create_network(self):
-        c_hidden = (
-            self.hparams.growth_rate * self.hparams.bn_size
-        )  # The start number of hidden channels
-
-        # A first convolution on the original image to scale up the channel size
-        self.input_net = nn.Sequential(
-            # No batch norm or activation function as done inside the Dense layers
-            nn.Conv2d(3, c_hidden, kernel_size=3, padding=1)
-        )
-
-        # Creating the dense blocks, eventually including transition layers
-        blocks = []
-        for block_idx, num_layers in enumerate(self.hparams.num_layers):
-            blocks.append(
-                DenseBlock(
-                    c_in=c_hidden,
-                    num_layers=num_layers,
-                    bn_size=self.hparams.bn_size,
-                    growth_rate=self.hparams.growth_rate,
-                    act_fn=self.hparams.act_fn,
-                )
-            )
-            c_hidden = (
-                c_hidden + num_layers * self.hparams.growth_rate
-            )  # Overall output of the dense block
-            if (
-                block_idx < len(self.hparams.num_layers) - 1
-            ):  # Don't apply transition layer on last block
-                blocks.append(
-                    TransitionLayer(
-                        c_in=c_hidden, c_out=c_hidden // 2, act_fn=self.hparams.act_fn
-                    )
-                )
-                c_hidden = c_hidden // 2
-
-        self.blocks = nn.Sequential(*blocks)
-
-        # Mapping to classification output
-        self.output_net = nn.Sequential(
-            OrderedDict([
-                ("out_norm", nn.BatchNorm2d(c_hidden)),
-                ("out_act", self.hparams.act_fn()),
-                ("out_pool", nn.AdaptiveAvgPool2d((1, 1))),
-                ("out_flatten", nn.Flatten()),
-                ("out_linear", nn.Linear(c_hidden, self.hparams.num_classes))
-            ])
-        )
-
-    def _init_params(self):
-        # Based on our discussion in Tutorial 4, we should initialize the
-        # convolutions according to the activation function
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, nonlinearity=self.hparams.act_fn_name)
-            elif isinstance(m, nn.BatchNorm2d):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
-
-    def forward(self, x):
-        x = self.input_net(x)
-        x = self.blocks(x)
-        x = self.output_net(x)
-        return x
-    
-    def rep_and_out(self, x):
-        x = self.input_net(x)
-        x = self.blocks(x)
-        x = self.output_net[:-1](x)
-        features = x
-        x = self.output_net[-1](x)
-        return features, x
-
-
-def densenet_16_moon():
-    return DenseNet(num_layers=[6, 6, 6])
-
-
-def swin():
-    return timm.models.SwinTransformer(
-        img_size=32,
-        patch_size=4,
-        num_classes=10,
-        embed_dim=96,
-        depths=(2, 2, 6, 2),
-        num_heads=(3, 6, 12, 24),
-        head_dim=None,
-        window_size=4,
-        mlp_ratio=4.,
+    return model
+
+convnext_small_ssl = convnext_small_pretrained_ssl
+
+# EFFICIENTNETv2 (better than ViT)
+
+
+def efficientnet_v2_s(seed):
+    seed_everything(seed)
+    bb = tm.efficientnet_v2_s()
+    num_ftrs = bb.classifier[1].in_features
+    bb.classifier[1] = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+efficientnet_v2_s_scratch = efficientnet_v2_s
+
+def efficientnet_v2_s_pretrained_pt(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    bb = tm.efficientnet_v2_s(weights="IMAGENET1K_V1")
+    os.environ['https_proxy'] = ''
+    num_ftrs = bb.classifier[1].in_features
+    bb.classifier[1] = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+efficientnet_v2_s_supervised = efficientnet_v2_s_pretrained_pt
+
+
+# WIDE RESNET
+
+
+def wide_resnet_50_2(seed):
+    seed_everything(seed)
+    bb = tm.wide_resnet50_2()
+    num_ftrs = bb.fc.in_features
+    bb.fc = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+wide_resnet_50_2_scratch = wide_resnet_50_2
+
+def wide_resnet_50_2_pretrained_pt(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    bb = tm.wide_resnet50_2(weights="IMAGENET1K_V2")
+    os.environ['https_proxy'] = ''
+    num_ftrs = bb.fc.in_features
+    bb.fc = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+wide_resnet_50_2_supervised = wide_resnet_50_2_pretrained_pt
+
+
+# RESNEXT
+
+def resnext50_32x4d(seed):
+    seed_everything(seed)
+    bb = tm.resnext50_32x4d()
+    num_ftrs = bb.fc.in_features
+    bb.fc = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+
+def resnext_50_32x4d_pretrained_pt(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    bb = tm.resnext50_32x4d(weights="IMAGENET1K_V2")
+    os.environ['https_proxy'] = ''
+    num_ftrs = bb.fc.in_features
+    bb.fc = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+
+# NORM FREE RESNET
+
+def nf_resnet50(seed):
+    seed_everything(seed)
+    model = timm.create_model(
+        'nf_resnet50.ra2_in1k',
+        pretrained=False,
+        num_classes=NUM_CLASSES
+    )
+    return model
+
+nf_resnet50_scratch = nf_resnet50
+
+
+def nf_resnet50_pretrained(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    model = timm.create_model(
+        'nf_resnet50.ra2_in1k',
+        pretrained=True,
+        num_classes=NUM_CLASSES
+    )
+    os.environ['https_proxy'] = ''
+    return model
+
+nf_resnet50_supervised = nf_resnet50_pretrained
+
+# SWIN
+
+
+def swin_t(seed):
+    seed_everything(seed)
+    bb = tm.swin_t()
+    num_ftrs = bb.head.in_features
+    bb.head = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+swin_t_scratch = swin_t
+
+def swin_t_pretrained_pt(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    bb = tm.swin_t(weights="IMAGENET1K_V1")
+    os.environ['https_proxy'] = ''
+    num_ftrs = bb.head.in_features
+    bb.head = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+swin_t_supervised = swin_t_pretrained_pt
+
+def swin_t_pretrained_timm(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    bb = timm.create_model(
+        'swin_tiny_patch4_window7_224.ms_in1k',
+        pretrained=True,
+        num_classes=NUM_CLASSES
+    )
+    os.environ['https_proxy'] = ''
+    return bb
+
+
+
+# VIT
+
+
+def vit_b_16(seed):
+    seed_everything(seed)
+    bb = tm.vit_b_16()
+    num_ftrs = bb.heads.head.in_features
+    bb.heads.head = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+vit_b_16_scratch = vit_b_16
+
+def vit_b_16_pretrained_pt(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    bb = tm.vit_b_16(weights="IMAGENET1K_V1")
+    os.environ['https_proxy'] = ''
+    num_ftrs = bb.heads.head.in_features
+    bb.heads.head = nn.Linear(num_ftrs, NUM_CLASSES)
+    return bb
+
+vit_b_16_supervised = vit_b_16_pretrained_pt
+
+
+def vit_b_16_pretrained_dino(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    model = torch.hub.load('facebookresearch/dino:main', 'dino_vitb16',
+                           pretrained=True)
+    model.head = nn.Linear(model.embed_dim, NUM_CLASSES)
+    os.environ['https_proxy'] = ''
+    return model
+
+
+# MoCoV3
+
+class VisionTransformerMoCo(VisionTransformer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Use fixed 2D sin-cos position embedding
+        self.build_2d_sincos_position_embedding()
+
+    def build_2d_sincos_position_embedding(self, temperature=10000.):
+        h, w = self.patch_embed.grid_size
+        grid_w = torch.arange(w, dtype=torch.float32)
+        grid_h = torch.arange(h, dtype=torch.float32)
+        grid_w, grid_h = torch.meshgrid(grid_w, grid_h)
+        assert self.embed_dim % 4 == 0, 'Embed dimension must be divisible by 4 for 2D sin-cos position embedding'
+        pos_dim = self.embed_dim // 4
+        omega = torch.arange(pos_dim, dtype=torch.float32) / pos_dim
+        omega = 1. / (temperature**omega)
+        out_w = torch.einsum('m,d->md', [grid_w.flatten(), omega])
+        out_h = torch.einsum('m,d->md', [grid_h.flatten(), omega])
+        pos_emb = torch.cat([torch.sin(out_w), torch.cos(out_w), torch.sin(out_h), torch.cos(out_h)], dim=1)[None, :, :]
+
+        pe_token = torch.zeros([1, 1, self.embed_dim], dtype=torch.float32)
+        self.pos_embed = nn.Parameter(torch.cat([pe_token, pos_emb], dim=1))
+        self.pos_embed.requires_grad = False
+
+def vit_b_16_pretrained_mocov3(seed):
+    seed_everything(seed)
+    model = VisionTransformerMoCo(
+        patch_size=16,
+        embed_dim=768,
+        depth=12,
+        num_heads=12,
+        mlp_ratio=4,
         qkv_bias=True,
-        drop_rate=0.,
-        proj_drop_rate=0.,
-        attn_drop_rate=0.,
-        drop_path_rate=0.1
+        norm_layer=partial(nn.LayerNorm, eps=1e-6)
     )
+    model.default_cfg = _cfg()
+    checkpoint = torch.load(f'{model_dir}/vit-b-300ep.pth.tar', map_location="cpu")
+    state_dict = checkpoint['state_dict']
+
+    for k in list(state_dict.keys()):
+        # retain only base_encoder up to before the embedding layer
+        if k.startswith('module.base_encoder') and not k.startswith('module.base_encoder.%s' % "head"):
+            # remove prefix
+            state_dict[k[len("module.base_encoder."):]] = state_dict[k]
+        # delete renamed or unused k
+        del state_dict[k]
+
+    model.load_state_dict(state_dict, strict=False)
+
+    model.head = nn.Linear(model.embed_dim, NUM_CLASSES)
+    return model
 
 
-def focalnet():
-    return timm.models.FocalNet(
-        num_classes=10
+# ConvMixer
+
+
+def convmixer(seed):
+    seed_everything(seed)
+    model = timm.create_model(
+        'convmixer_768_32.in1k',
+        pretrained=False,
+        num_classes=NUM_CLASSES
     )
+    return model
 
 
-def simple_vit_quarter():
-    return SimpleViT(
-        image_size=32,
-        patch_size=4,
-        num_classes=10,
-        dim=256,
-        depth=3,
-        heads=8,
-        mlp_dim=512
+def convmixer_pretrained(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    model = timm.create_model(
+        'convmixer_768_32.in1k',
+        pretrained=True,
+        num_classes=NUM_CLASSES
     )
+    os.environ['https_proxy'] = ''
+    return model
 
 
-def simple_vit_half():
-    return SimpleViT(
-        image_size=32,
-        patch_size=4,
-        num_classes=10,
-        dim=512,
-        depth=3,
-        heads=8,
-        mlp_dim=1024
-    )
-
-# Group Norm networks
-
-
-class BasicBlock_group(nn.Module):
-    expansion = 1
-
-    def __init__(self, in_planes, planes, stride=1, option="A"):
-        super(BasicBlock_group, self).__init__()
-        self.conv1 = nn.Conv2d(
-            in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False
+def nfnet_f0(seed): # 71.5M parameters 7.2 GMACs
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    model = timm.create_model(
+        'dm_nfnet_f0.dm_in1k',
+        pretrained=True,
+        num_classes=NUM_CLASSES
         )
-        # self.bn1 = nn.BatchNorm2d(planes)
-        self.bn1 = nn.GroupNorm(2, planes)
-        self.conv2 = nn.Conv2d(
-            planes, planes, kernel_size=3, stride=1, padding=1, bias=False
+    os.environ['https_proxy'] = ''
+    return model
+
+nfnet_f0_supervised = nfnet_f0
+
+def nfnet_l0(seed): # 35M parameters 4.4.GMAcs
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    model = timm.create_model(
+        'nfnet_l0.ra2_in1k',
+        pretrained=True,
+        num_classes=NUM_CLASSES
         )
-        # self.bn2 = nn.BatchNorm2d(planes)
-        self.bn2 = nn.GroupNorm(2, planes)
+    os.environ['https_proxy'] = ''
+    return model
 
-        self.shortcut = nn.Sequential()
-        if stride != 1 or in_planes != planes:
-            if option == "A":
-                """
-                For CIFAR10 ResNet paper uses option A.
-                """
-                self.shortcut = LambdaLayer(
-                    lambda x: F.pad(
-                        x[:, :, ::2, ::2],
-                        (0, 0, 0, 0, planes // 4, planes // 4),
-                        "constant",
-                        0,
-                    )
-                )
-            elif option == "B":
-                self.shortcut = nn.Sequential(
-                    OrderedDict([
-                        ('short_conv',
-                         nn.Conv2d(in_planes, self.expansion * planes,
-                                   kernel_size=1, stride=stride, bias=False)),
-                        ('short_norm', nn.GroupNorm(2, self.expansion * planes))
-                        ])
-                )
+nfnet_l0_supervised = nfnet_l0
 
-    def forward(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = self.bn2(self.conv2(out))
-        out += self.shortcut(x)
-        out = F.relu(out)
-        return out
+def eca_nfnet_l0(seed): # 24M parameters 4.4 GMACs
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    model = timm.create_model(
+        'eca_nfnet_l0.ra2_in1k',
+        pretrained=True,
+        num_classes=NUM_CLASSES
+        )
+    os.environ['https_proxy'] = ''
+    return model
+
+eca_nfnet_l0_supervised = eca_nfnet_l0
 
 
-class ResNet_group(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
-        super(ResNet_group, self).__init__()
-        self.in_planes = 16
+def eca_nfnet_l1(seed): # 24M parameters 4.4 GMACs
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    model = timm.create_model(
+        'eca_nfnet_l1.ra2_in1k',
+        pretrained=True,
+        num_classes=NUM_CLASSES
+        )
+    os.environ['https_proxy'] = ''
+    return model
 
-        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False)
-        # self.bn1 = nn.BatchNorm2d(16)
-        self.bn1 = nn.GroupNorm(2, 16)
-        self.layer1 = self._make_layer(block, 16, num_blocks[0], stride=1)
-        self.layer2 = self._make_layer(block, 32, num_blocks[1], stride=2)
-        self.layer3 = self._make_layer(block, 64, num_blocks[2], stride=2)
-        self.classifier = nn.Linear(64, num_classes)
+eca_nfnet_l1_supervised = eca_nfnet_l1
 
-        self.apply(_weights_init)
+def eca_nfnet_l2(seed): # 24M parameters 4.4 GMACs
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    model = timm.create_model(
+        'eca_nfnet_l2.ra3_in1k',
+        pretrained=True,
+        num_classes=NUM_CLASSES
+        )
+    os.environ['https_proxy'] = ''
+    return model
 
-    def _make_layer(self, block, planes, num_blocks, stride):
-        strides = [stride] + [1] * (num_blocks - 1)
-        layers = []
-        for stride in strides:
-            layers.append(block(self.in_planes, planes, stride, option="A"))
-            self.in_planes = planes * block.expansion
+eca_nfnet_l2_supervised = eca_nfnet_l2
 
-        return nn.Sequential(*layers)
 
-    def forward(self, x, return_features=False):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = F.avg_pool2d(out, out.size()[3])
-        out = out.view(out.size(0), -1)
-        features = out
-        out = self.classifier(out)
-        if return_features:
-            return out, features
+def silu_to_gelu(model):
+    for name, child in model.named_children():
+
+        if isinstance(child, nn.SiLU):
+            setattr(model, name, nn.GELU)
+
         else:
-            return out
-
-    def rep_and_out(self, x):
-        out = F.relu(self.bn1(self.conv1(x)))
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = F.avg_pool2d(out, out.size()[3])
-        out = out.view(out.size(0), -1)
-        features = out
-        out = self.classifier(out)
-        return out, features
+            silu_to_gelu(child)
 
 
-def resnet20_group(num_classes=10):
-    return ResNet_group(BasicBlock_group, [3, 3, 3], num_classes=num_classes)
+def gelu_eca_nfnet_l0(seed): # 24M parameters 4.4 GMACs
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    model = timm.create_model(
+        'eca_nfnet_l0.ra2_in1k',
+        pretrained=True,
+        num_classes=NUM_CLASSES
+        )
+    os.environ['https_proxy'] = ''
+
+    silu_to_gelu(model)
+
+    return model
+
+def gelu_eca_nfnet_l1(seed): # 24M parameters 4.4 GMACs
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    model = timm.create_model(
+        'eca_nfnet_l1.ra2_in1k',
+        pretrained=True,
+        num_classes=NUM_CLASSES
+        )
+    os.environ['https_proxy'] = ''
+
+    silu_to_gelu(model)
+
+    return model
+
+def gelu_eca_nfnet_l2(seed): # 24M parameters 4.4 GMACs
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    model = timm.create_model(
+        'eca_nfnet_l2.ra3_in1k',
+        pretrained=True,
+        num_classes=NUM_CLASSES
+        )
+    os.environ['https_proxy'] = ''
+
+    silu_to_gelu(model)
+
+    return model
+
+
+def gelu_nfnet_l0(seed): # 24M parameters 4.4 GMACs
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    model = timm.create_model(
+        'nfnet_l0.ra2_in1k',
+        pretrained=True,
+        num_classes=NUM_CLASSES
+        )
+    os.environ['https_proxy'] = ''
+
+    silu_to_gelu(model)
+
+    return model
+
+
+
+# Credit to Sara Pieri for the following
+
+
+def coatnet_ln(seed):
+    seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    model = timm.create_model(
+        'coatnet_0_rw_224.sw_in1k',
+        pretrained=True,
+        num_classes=NUM_CLASSES
+        )
+    os.environ['https_proxy'] = ''
+    coatnet_to_layer_norm(model)
+
+    return model
+
+coatnet_ln_supervised = coatnet_ln
+
+def coatnet_to_layer_norm(module: torch.nn.Module):
+
+    for name, child in module.named_children():
+
+        if isinstance(child, BatchNormAct2d):
+            num_channels = child.num_features
+            setattr(module, name, LayerNormAct2d(num_channels,eps=1e-5,act_layer=nn.SiLU))
+            
+        elif isinstance(child, nn.BatchNorm2d):
+            child: nn.BatchNorm2d = child
+            num_channels = child.num_features
+            setattr(module, name, LayerNorm2d(num_channels))
+
+        else:
+            coatnet_to_layer_norm(child)
+
+
+# CoAtNeXt - A timm specific arch that uses ConvNeXt blocks in place of MBConv blocks in CoAtNet. 
+# All normalization layers are LayerNorm (no BatchNorm).
+
+
+def coatnetx_nano(seed): # 14.7M Parameters 2.5 GMACs
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
+    model = timm.create_model(
+        'coatnext_nano_rw_224.sw_in1k',
+        pretrained=True,
+        num_classes=11
+        )
+    os.environ['https_proxy'] = ''
+    return model
+
+coatnetx_nano_supervised = coatnetx_nano

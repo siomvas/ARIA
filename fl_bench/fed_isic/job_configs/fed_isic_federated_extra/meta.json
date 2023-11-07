@@ -1,0 +1,9 @@
+{
+    "name": "fed_isic_federated_extra_resnet_50_pretrained_mocov3_20_0.0005_200_fed_isic_fedavg",
+    "deploy_map": {
+        "fed_isic_federated_extra": [
+            "@ALL"
+        ]
+    },
+    "min_clients": 6
+}

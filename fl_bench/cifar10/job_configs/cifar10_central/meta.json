@@ -1,5 +1,5 @@
 {
-    "name": "cifar10_central_num_rounds=1_lr=0.001_epochs=200_model=wideresnet_16_8_alpha=0.6",
+    "name": "cifar10_central_resnet_18_supervised_100_0.01_100_alpha0.2_cifar10_fedavg",
     "deploy_map": {
         "cifar10_central": [
             "@ALL"

@@ -61,13 +61,13 @@ class CIFAR10DataModule():
                 train=True,
                 download=False,
                 transform=self.transform_train,
-            )
+        )
         self.val_dataset = datasets.CIFAR10(
             root=self.data_dir,
             train=False,
             download=False,
             transform=self.transform_valid
-            )
+        )
 
         self.train_dataloader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=0)
         self.val_dataloader = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=0)

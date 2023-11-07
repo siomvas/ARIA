@@ -2,14 +2,11 @@ import argparse
 import os
 import json
 from fl_bench.medmnist.src.utils import read_json, write_json
-import uuid
-
-import nvflare.app_common.workflows.scatter_and_gather_scaffold
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-job", type=str, help="Path to job config.")
-    parser.add_argument("-method", type=str, default='fedavg', choices=['fedavg', 'fedprox', 'fedopt', 'scaffold'])
+    parser.add_argument("-method", type=str, default='fedavg', choices=['central', 'fedavg', 'fedprox', 'fedopt', 'scaffold', 'fedinit'])
     parser.add_argument("-alpha", type=float, default=1)
     parser.add_argument("-model_name", type=str, default=argparse.SUPPRESS)
     parser.add_argument("-num_rounds", type=int, default=argparse.SUPPRESS)
@@ -67,7 +64,6 @@ def main():
     # update alpha
     print(f"Setting alpha = {args.alpha}")
     server_config["alpha"] = args.alpha
-    token = str(uuid.uuid4())
     job_name = f"{job_name}_alpha{args.alpha}"
     meta_config["name"] = job_name
     split_dir = os.path.join(args.train_split_root, f"alpha={args.alpha}_seed={args.seed}")
@@ -79,7 +75,10 @@ def main():
     write_json(meta_config, meta_config_filename)
 
     # update method
-    # learner_path = map_func(args.dataset, args.learner)
+    # convert central to fedavg for config
+    if args.method == 'central':
+        args.method = 'fedavg'
+
     print(f"Setting method = {args.method}")
     client_config["components"][0]["args"]["method"] = args.method
 

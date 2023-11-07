@@ -97,13 +97,14 @@ class FedISICLearner(Learner):
         self.best_model_path = "models/best_model.pt"
         self.last_model_path = "models/last.pt"
 
-        assert self.method in ["fedavg", "fedprox", "fedopt", "scaffold"]
-        if self.method in ["fedavg", "fedprox", "fedopt"]:
+        if self.method in ["fedavg", "fedprox", "fedopt", 'fedinit']:
             self.trainer = BaseTrainer(config_train, self.method, self.class_weights)
-        else:
+        elif self.method == "scaffold":
             self.trainer = ScaffoldTrainer(config_train, self.method, self.class_weights)
             exclude_vars = ["num_batches_tracked", "attn.relative_position_index"]
             self.trainer.scaffold_helper.init(model=self.model, exclude_vars=exclude_vars)
+        else:
+            raise ValueError(f"Unknown method {self.method}")
 
         self.validator = Validator()
 
@@ -141,7 +142,8 @@ class FedISICLearner(Learner):
         dxo = from_shareable(data)
         global_weights = dxo.data
 
-        # TODO: load weights from global_weights
+        # NB load_weights(self.model, dxo.data) loads the weights into the model during validation
+        # as the sequence is validate, train, validate, train, ...
         # make a copy of model_global as reference for potential FedProx loss
         if self.method == "fedprox":
             self.model_global = copy.deepcopy(self.model)
@@ -197,7 +199,7 @@ class FedISICLearner(Learner):
             self.writer.add_scalar(f"Accuracy/Post-Train Val Accuracy", v, self.trainer.current_step)
         self.log_info(fl_ctx, str(table))
 
-        # Save checkpoint if necessaryy
+        # Save checkpoint if necessary
         if self.best_metric < metrics[self.key_metric]:
             self.best_metric = metrics[self.key_metric]
             self.trainer.save_checkpoint(self.best_model_path, self.model)
@@ -262,7 +264,29 @@ class FedISICLearner(Learner):
         if not dxo.data_kind == DataKind.WEIGHTS:
             self.log_exception(fl_ctx, f"DXO is of type {dxo.data_kind} but expected type WEIGHTS")
             return make_reply(ReturnCode.BAD_TASK_DATA)
-        _ = load_weights(self.model, dxo.data)
+        
+        if self.method != "fedinit" :
+            load_weights(self.model, dxo.data)
+        else:
+            beta = 0.1
+            # model: torch.nn.Module, weights: Dict[str, np.ndarray]
+            # only necessary when running fewer threads than clients
+            # prev_model = copy.deepcopy(self.model)
+            # prev_model.load_state_dict(torch.load(self.last_model_path)["model"])
+            local_var_dict = self.model.state_dict() #prev round dict
+            model_keys = dxo.data.keys()
+            for var_name in local_var_dict:
+                if var_name in model_keys:
+                    wg = dxo.data[var_name]
+                try:
+                    local_var_dict[var_name] = torch.as_tensor(
+                        (1 + beta) * torch.as_tensor(np.reshape(wg, local_var_dict[var_name].shape)) - 
+                        beta * local_var_dict[var_name].to('cpu')
+                    )
+                except Exception as e:
+                    raise ValueError(f"Convert weight from {var_name} failed with error {str(e)}")
+                
+            self.model.load_state_dict(local_var_dict)
 
         # 4. Run validation
         self.model = self.model.to(self.device)

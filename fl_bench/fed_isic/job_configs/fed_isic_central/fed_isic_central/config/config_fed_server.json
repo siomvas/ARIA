@@ -3,7 +3,7 @@
     "min_clients": 1,
     "num_rounds": 2,
     "seed": 24,
-    "model_path": "fl_bench.networks.fed_isic_nets.resnet_18_scratch",
+    "model_path": "fl_bench.networks.fed_isic_nets.wide_resnet_50_2_ssl",
     "server": {
         "heart_beat_timeout": 600
     },

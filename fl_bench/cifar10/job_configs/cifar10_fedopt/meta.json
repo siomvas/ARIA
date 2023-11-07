@@ -1,9 +1,0 @@
-{
-    "name": "cifar10_fedopt_num_rounds=25_lr=0.03_epochs=4_model=resnet20_moon_alpha=0.6",
-    "deploy_map": {
-        "cifar10_fedopt": [
-            "@ALL"
-        ]
-    },
-    "min_clients": 10
-}

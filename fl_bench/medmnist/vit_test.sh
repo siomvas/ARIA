@@ -17,7 +17,7 @@ python3 ${PWD}/src/setup.py \
 -num_rounds 5 \
 -lr 0.01 \
 --batch_size 64 \
--local_steps 8000 \
+-local_steps 4000 \
 -model_name ${model_name} \
 -seed 111 \
 --amp \

@@ -1,5 +1,5 @@
 {
-    "name": "medmnist_federated_resnet_18_50_0.01_200_alpha0.5_medmnist_fedopt",
+    "name": "medmnist_federated_resnet50_pretrained_dino_25_0.01_200_alpha0.2_medmnist_fedavg",
     "deploy_map": {
         "medmnist_federated": [
             "@ALL"

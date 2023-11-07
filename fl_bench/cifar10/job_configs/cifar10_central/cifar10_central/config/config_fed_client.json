@@ -9,7 +9,7 @@
             ],
             "executor": {
                 "id": "Executor",
-                "path": "nvflare.app_common.executors.learner_executor.LearnerExecutor",
+                "name": "LearnerExecutor",
                 "args": {
                     "learner_id": "cifar10-learner"
                 }
@@ -21,15 +21,14 @@
     "components": [
         {
             "id": "cifar10-learner",
-            "path": "fl_bench.cifar10.pt.learners.cifar10_learner_savemore.CIFAR10Learner_savemore",
+            "path": "fl_bench.cifar10.src.cifar_learner.CIFAR10Learner",
             "args": {
-                "aggregation_epochs": 200,
-                "lr": 0.001,
+                "config_train_name": "config_train.json",
+                "method": "fedavg",
+                "seed": 111,
                 "central": true,
-                "model_arch": "wideresnet_16_8",
-                "save_freq": 2
+                "hyperion": true
             }
         }
-    ],
-    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/res/cifar10_splits/cifar10_central_num_rounds=1_lr=0.001_epochs=200_model=wideresnet_16_8_alpha=0.6"
+    ]
 }

@@ -1,9 +1,0 @@
-{
-    "name": "fed_isic_federated_2_vit_b_16_pretrained_ssl_20_0.0005_200_fed_isic_scaffold",
-    "deploy_map": {
-        "fed_isic_federated_2": [
-            "@ALL"
-        ]
-    },
-    "min_clients": 6
-}
