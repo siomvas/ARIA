@@ -1,16 +1,16 @@
 {
-    "train_idx_root": "/path/to/FL_bench/fl_bench/medmnist/splits/",
+    "train_idx_root": "/path/to/FL_bench/fl_bench/medmnist/splits/combo/alpha=-2.0_seed=222",
     "learning_rate": 0.01,
     "fedprox_mu": 0.0,
-    "batch_size": 256,
-    "max_steps": 8,
-    "model_name": "efficientnetv2_s_pretrained_pt",
+    "batch_size": 64,
+    "max_steps": 20000,
+    "model_name": "nf_resnet50_ssl",
     "optimizer_args": {
         "class": "SGD",
-        "momentum": 0.99,
+        "momentum": 0.9,
         "nesterov": true,
         "weight_decay": 1e-05
     },
-    "local_steps": 4,
+    "local_steps": 10000,
     "use_half_precision": true
 }

@@ -21,13 +21,13 @@
     "components": [
         {
             "id": "cifar10-learner",
-            "path": "fl_bench.cifar10.src.cifar_learner.CIFAR10Learner",
+            "path": "fl_bench.cifar10.src.cifar10_learner.CIFAR10Learner",
             "args": {
                 "config_train_name": "config_train.json",
                 "method": "fedavg",
-                "seed": 111,
+                "seed": 42,
                 "central": true,
-                "hyperion": true
+                "hyperion": false
             }
         }
     ]

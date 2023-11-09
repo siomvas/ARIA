@@ -640,7 +640,7 @@ eca_nfnet_l1_supervised = eca_nfnet_l1
 def eca_nfnet_l2(seed): # 24M parameters 4.4 GMACs
     os.environ['https_proxy'] = 'http://proxy.example.org:3128'
     model = timm.create_model(
-        'eca_nfnet_l0.ra3_in1k',
+        'eca_nfnet_l2.ra3_in1k',
         pretrained=True,
         num_classes=NUM_CLASSES
         )
@@ -654,10 +654,12 @@ def silu_to_gelu(model):
     for name, child in model.named_children():
 
         if isinstance(child, nn.SiLU):
-            setattr(model, name, nn.GELU)
+            setattr(model, name, nn.GELU())
 
         else:
             silu_to_gelu(child)
+
+
 
 
 def gelu_eca_nfnet_l0(seed): # 24M parameters 4.4 GMACs
@@ -673,6 +675,8 @@ def gelu_eca_nfnet_l0(seed): # 24M parameters 4.4 GMACs
 
     return model
 
+gelu_eca_nfnet_l0_supervised = gelu_eca_nfnet_l0
+
 def gelu_eca_nfnet_l1(seed): # 24M parameters 4.4 GMACs
     os.environ['https_proxy'] = 'http://proxy.example.org:3128'
     model = timm.create_model(
@@ -686,6 +690,7 @@ def gelu_eca_nfnet_l1(seed): # 24M parameters 4.4 GMACs
 
     return model
 
+gelu_eca_nfnet_l1_supervised = gelu_eca_nfnet_l1
 
 def gelu_eca_nfnet_l2(seed): # 24M parameters 4.4 GMACs
     os.environ['https_proxy'] = 'http://proxy.example.org:3128'
@@ -700,6 +705,7 @@ def gelu_eca_nfnet_l2(seed): # 24M parameters 4.4 GMACs
 
     return model
 
+gelu_eca_nfnet_l2_supervised = gelu_eca_nfnet_l2
 
 def gelu_nfnet_l0(seed): # 24M parameters 4.4 GMACs
     os.environ['https_proxy'] = 'http://proxy.example.org:3128'
@@ -714,6 +720,7 @@ def gelu_nfnet_l0(seed): # 24M parameters 4.4 GMACs
 
     return model
 
+gelu_nfnet_l0_supervised = gelu_nfnet_l0
 
 
 # Credit to Sara Pieri for the following

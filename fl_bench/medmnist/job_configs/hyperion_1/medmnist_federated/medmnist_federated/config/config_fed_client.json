@@ -25,7 +25,7 @@
             "args": {
                 "config_train_name": "config_train.json",
                 "method": "fedavg",
-                "seed": 111,
+                "seed": 222,
                 "central": false,
                 "hyperion": true
             }

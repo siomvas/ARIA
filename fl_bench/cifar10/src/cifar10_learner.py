@@ -23,7 +23,7 @@ from .utils import load_weights, extract_weights, seed_everything
 from .validator import Validator
 from fl_bench.networks.cifar10_nets import *
 
-from .trainers import BaseTrainer, ScaffoldTrainer
+from .trainers import BaseTrainer, ScaffoldTrainer, BaseTrainer_theirs#, ScaffoldTrainer_theirs
 
 
 class CIFAR10Learner(Learner):
@@ -308,3 +308,34 @@ class CIFAR10Learner(Learner):
     def finalize(self, fl_ctx):
         self.dm.teardown()
         self.writer.close()
+
+
+class CIFAR10Learner_theirs(CIFAR10Learner):
+    def __init__(
+        self,
+        config_train_name: str,
+        method: str,
+        seed: int,
+        max_retry: int = 1,
+        central: bool = False,
+        train_task_name: str = AppConstants.TASK_TRAIN,
+        submit_model_task_name: str = AppConstants.TASK_SUBMIT_MODEL,
+        hyperion: bool = False,
+    ):
+        super().__init__(
+            config_train_name,
+            method,
+            seed,
+            max_retry,
+            central,
+            train_task_name,
+            submit_model_task_name,
+            hyperion
+        )
+    
+    def initialize(self, parts, fl_ctx):
+        super().initialize(parts, fl_ctx)
+        with open(prefix / "config" / self.config_train_name) as f:
+            config_train = json.load(f)
+        self.trainer = BaseTrainer_theirs(config_train, self.method) #\
+            # if self.method == "scaffold" else ScaffoldTrainer_theirs(config_train, self.method)

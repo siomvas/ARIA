@@ -1,17 +1,33 @@
 {
     "format_version": 2,
     "min_clients": 4,
-    "num_rounds": 25,
-    "seed": 42,
-    "hyperion": true,
-    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/fl_bench/medmnist/splits/combo/alpha=0.2_seed=42",
-    "alpha": 0.2,
-    "model_path": "fl_bench.networks.medmnist_nets.resnet50_pretrained_dino",
+    "num_rounds": 50,
+    "seed": 111,
+    "hyperion": false,
+    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/fl_bench/medmnist/splits/combo/alpha=0.1_seed=111",
+    "alpha": 0.1,
+    "model_path": "fl_bench.networks.medmnist_nets.resnet_50_scratch",
     "server": {
         "heart_beat_timeout": 600
     },
     "task_data_filters": [],
-    "task_result_filters": [],
+    "task_result_filters": [
+        {
+            "tasks": [
+                "train",
+                "submit_model",
+                "validate"
+            ],
+            "filters": [
+                {
+                    "name": "ExcludeVars",
+                    "args": {
+                        "exclude_vars": "(?:num_batches_tracked)|(?:attn.relative_position_index)"
+                    }
+                }
+            ]
+        }
+    ],
     "components": [
         {
             "id": "data_splitter",
@@ -51,9 +67,10 @@
                 "device": "cpu",
                 "source_model": "model",
                 "optimizer_args": {
-                    "path": "torch.optim.Adam",
+                    "path": "torch.optim.SGD",
                     "args": {
-                        "lr": 1.0
+                        "lr": 1.0,
+                        "momentum": 0.6
                     },
                     "config_type": "dict"
                 },
@@ -71,7 +88,10 @@
             "id": "aggregator",
             "name": "InTimeAccumulateWeightedAggregator",
             "args": {
-                "expected_data_kind": "WEIGHT_DIFF"
+                "expected_data_kind": {
+                    "_model_weights_": "WEIGHT_DIFF",
+                    "scaffold_c_diff": "WEIGHT_DIFF"
+                }
             }
         },
         {
@@ -113,7 +133,7 @@
     "workflows": [
         {
             "id": "scatter_and_gather",
-            "name": "ScatterAndGather",
+            "name": "ScatterAndGatherScaffold",
             "args": {
                 "min_clients": "{min_clients}",
                 "num_rounds": "{num_rounds}",

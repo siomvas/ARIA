@@ -24,10 +24,10 @@
             "path": "fl_bench.medmnist.src.medmnist_learner.MedMNISTLearner",
             "args": {
                 "config_train_name": "config_train.json",
-                "method": "fedavg",
-                "seed": 42,
+                "method": "scaffold",
+                "seed": 111,
                 "central": false,
-                "hyperion": true
+                "hyperion": false
             }
         }
     ]

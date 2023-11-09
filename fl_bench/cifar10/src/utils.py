@@ -82,6 +82,7 @@ class Cifar10DataSplitter(FLComponent):
         num_sites: int = 8,
         alpha: float = 0.5,
         seed: int = 0,
+        hyperion: bool = False
     ):
         super().__init__()
         self.split_dir = split_dir

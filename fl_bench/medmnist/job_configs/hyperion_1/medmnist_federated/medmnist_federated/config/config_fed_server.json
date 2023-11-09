@@ -2,11 +2,11 @@
     "format_version": 2,
     "min_clients": 4,
     "num_rounds": 50,
-    "seed": 111,
+    "seed": 222,
     "hyperion": true,
-    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/fl_bench/medmnist/splits/combo/alpha=0.5_seed=111",
-    "alpha": 0.5,
-    "model_path": "fl_bench.networks.medmnist_nets.efficientnet_v2_s_pretrained_pt",
+    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/fl_bench/medmnist/splits/combo/alpha=100.0_seed=222",
+    "alpha": 100.0,
+    "model_path": "fl_bench.networks.medmnist_nets.nf_resnet50_scratch",
     "server": {
         "heart_beat_timeout": 600
     },

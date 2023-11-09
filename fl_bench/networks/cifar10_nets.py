@@ -10,7 +10,7 @@ from fl_bench.fed_isic.src.utils import seed_everything
 from functools import partial
 
 
-model_dir = "/path/to/model_weights"
+model_dir = "/path/to/localscratch/model_weights"
 torch.hub.set_dir(model_dir)
 
 NUM_CLASSES = 10

@@ -93,8 +93,8 @@ class MedMNISTDataModule():
         g.manual_seed(self.seed)
 
         self.train_dataloader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=4, pin_memory=True, worker_init_fn=seed_worker, generator=g)
-        self.val_dataloader = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=4, pin_memory=True, worker_init_fn=seed_worker, generator=g)
-        self.test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=4, pin_memory=True, worker_init_fn=seed_worker, generator=g)
+        self.val_dataloader = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=4)
+        self.test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=4)
 
     def teardown(self):
         self.train_dataset = {}
@@ -175,10 +175,10 @@ class ComboOrganAMNISTDataModule():
         g = torch.Generator()
         g.manual_seed(self.seed)
 
-        self.train_dataloader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=4, pin_memory=True, worker_init_fn=seed_worker, generator=g)
-        self.val_dataloader = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=4, pin_memory=True)
-        self.combo_dataloader = DataLoader(self.combo_dataset, batch_size=self.batch_size, shuffle=True, num_workers=4, pin_memory=True, worker_init_fn=seed_worker, generator=g)
-        self.test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=4, pin_memory=True)
+        self.train_dataloader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=4, worker_init_fn=seed_worker, generator=g)
+        self.val_dataloader = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=4)
+        self.combo_dataloader = DataLoader(self.combo_dataset, batch_size=self.batch_size, shuffle=True, num_workers=4, worker_init_fn=seed_worker, generator=g)
+        self.test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=4)
 
     def teardown(self):
         self.train_dataset = {}

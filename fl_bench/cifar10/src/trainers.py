@@ -196,6 +196,93 @@ class BaseTrainer(object):
         self.cleanup()
 
 
+class BaseTrainer_theirs(BaseTrainer):
+    def __init__(self, train_config: Dict, method: str):
+
+        super().__init__(train_config, method)
+
+    def configure_optimizer(self):
+        optimizer_class = self.optimizer_dict.pop('class', None)
+        assert optimizer_class in ['SGD', 'Adam', 'AdamW']
+        self.opt = eval(f'torch.optim.{optimizer_class}')(
+            self.model.parameters(),
+            lr=self.init_lr,
+            **self.optimizer_dict)
+        self.optimizer_dict['class'] = optimizer_class
+        if self.opt_state is not None:
+            self.opt.load_state_dict(self.opt_state)
+
+        self.sch = CosineWarmupScheduler(
+            self.opt,
+            warmup_epochs=100,
+            max_epochs=self.max_steps/self.gradient_accumulation_steps,
+            end_value=0.0,
+        )
+        if self.sch_state is not None:
+            self.sch.load_state_dict(self.sch_state)
+
+
+    def training_loop(self, data_loader: DataLoader, num_steps: int, device: str = "cuda:0"):
+        target_step = self.current_step + num_steps
+        avg_loss = 0.0
+        with tqdm(total=num_steps, dynamic_ncols=True) as pbar:
+            # Configure progress bar
+            pbar.set_description(f"Round {self.current_round}")
+
+            for i, batch in enumerate(self.get_batch(data_loader, num_steps)):
+                # Forward
+                with torch.cuda.amp.autocast(enabled=self.use_half_precision):
+                    image, label = batch[0].to(device), batch[1].to(device)
+                    preds = self.model(image)
+                    loss = self.criterion(preds, label) / self.gradient_accumulation_steps
+
+                # Backward
+                self.opt.zero_grad(set_to_none=True)
+                self.scaler.scale(loss).backward()                
+
+                #  Gradient accumulation
+                if (i + 1) % self.gradient_accumulation_steps == 0:
+                    # Gradient clipping
+                    self.scaler.unscale_(self.opt)
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0, norm_type=2.0)
+
+                    # Apply gradient
+                    self.scaler.step(self.opt)
+                    self.sch.step()
+                    self.scaler.update()
+
+                    if self.logger is not None:
+                        step = self.current_step / self.gradient_accumulation_steps
+                        self.logger.add_scalar("Loss/Batch Loss", loss, step)
+                        self.logger.add_scalar("Learning Rate", self.sch.get_last_lr()[-1], step)
+
+                # Update progress bar
+                pbar.set_postfix(loss=f"{loss.item():.2f}")
+                pbar.update(1)
+
+                # Write average loss to tensorboard
+                avg_loss += loss.item()
+
+                self.current_step += 1
+                if self.current_step >= target_step:
+                    break
+                if self.abort is not None and self.abort.triggered:
+                    break
+
+            self.logger.add_scalar(
+                "Loss/Round Loss",
+                avg_loss / num_steps,
+                self.current_step / self.gradient_accumulation_steps
+            )
+            # Post-train accuracy every 5 rounds starting from the 5th round
+            if self.current_round % 5 == 0 and self.current_round > 4:
+                post_train_acc = next(iter(self.validator.run(self.model, data_loader).values()))
+                self.logger.add_scalar(
+                    "Accuracy/Post-Train Train Accuracy",
+                    post_train_acc,
+                    self.current_step / self.gradient_accumulation_steps
+                )
+
 class ScaffoldTrainer(BaseTrainer):
     def __init__(self, train_config: Dict, method: str):
         super().__init__(train_config, method)

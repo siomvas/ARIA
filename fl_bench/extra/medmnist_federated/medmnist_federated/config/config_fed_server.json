@@ -2,11 +2,11 @@
     "format_version": 2,
     "min_clients": 4,
     "num_rounds": 50,
-    "seed": 222,
+    "seed": 111,
     "hyperion": false,
-    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/fl_bench/medmnist/splits/combo/",
-    "alpha": 100.0,
-    "model_path": "fl_bench.networks.medmnist_nets.resnet_50",
+    "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/fl_bench/medmnist/splits/combo/alpha=0.1_seed=111",
+    "alpha": 0.1,
+    "model_path": "fl_bench.networks.medmnist_nets.resnet_18_scratch",
     "server": {
         "heart_beat_timeout": 600
     },
@@ -62,7 +62,7 @@
                     "path": "torch.optim.lr_scheduler.CosineAnnealingLR",
                     "args": {
                         "T_max": "{num_rounds}",
-                        "eta_min": 0.9
+                        "eta_min": 0.8
                     },
                     "config_type": "dict"
                 }

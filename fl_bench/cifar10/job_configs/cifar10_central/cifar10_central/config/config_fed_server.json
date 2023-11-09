@@ -5,7 +5,7 @@
     "seed": 42,
     "TRAIN_SPLIT_ROOT": "/path/to/FL_bench/fl_bench/cifar10/splits/alpha=0.2_seed=42",
     "alpha": 0.2,
-    "model_path": "fl_bench.networks.cifar10_nets.resnet_18_supervised",
+    "model_path": "fl_bench.networks.cifar10_nets.vit_b_16_supervised",
     "server": {
         "heart_beat_timeout": 600
     },

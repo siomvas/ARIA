@@ -2,9 +2,9 @@
     "format_version": 2,
     "min_clients": 6,
     "num_rounds": 20,
-    "seed": 42,
+    "seed": 24,
     "hyperion": false,
-    "model_path": "fl_bench.networks.fed_isic_nets.eca_nfnet_l1",
+    "model_path": "fl_bench.networks.fed_isic_nets.gelu_eca_nfnet_l2_supervised",
     "server": {
         "heart_beat_timeout": 600
     },

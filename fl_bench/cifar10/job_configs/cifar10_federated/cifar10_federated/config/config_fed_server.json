@@ -15,7 +15,7 @@
     "components": [
         {
             "id": "data_splitter",
-            "path": "fl_bench.cifar10.src.utils.ComboSplitter",
+            "path": "fl_bench.cifar10.src.utils.Cifar10DataSplitter",
             "args": {
                 "split_dir": "{TRAIN_SPLIT_ROOT}",
                 "num_sites": "{min_clients}",

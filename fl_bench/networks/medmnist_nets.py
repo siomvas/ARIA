@@ -14,7 +14,7 @@ from functools import partial
 model_dir = "/path/to/model_weights"
 torch.hub.set_dir(model_dir)
 
-ssl_model_dir = "/path/to/FL_bench/fl_bench/abdomen_ssl/models"
+ssl_model_dir = "/path/to/archive/abdomen_ssl_models/models"
 
 NUM_CLASSES = 11
 
@@ -40,7 +40,7 @@ def vgg_11_pretrained_pt(seed):
 
 # RESNET
 
-def resnet_18(seed):
+def resnet_18_scratch(seed):
     seed_everything(seed)
     bb = tm.resnet18()
     num_ftrs = bb.fc.in_features
@@ -480,10 +480,12 @@ vit_b_16_supervised = vit_b_16_pretrained_pt
 
 def vit_b_16_pretrained_ssl(seed):
     seed_everything(seed)
+    os.environ['https_proxy'] = 'http://proxy.example.org:3128'
     model = torch.hub.load('facebookresearch/dino:main', 'dino_vitb16',
                            pretrained=False)
     model.head = nn.Linear(model.embed_dim, NUM_CLASSES)
     model.load_state_dict(torch.load(os.path.join(ssl_model_dir,"vit_b_16.pth")))
+    os.environ['https_proxy'] = ''
 
     return model
 
@@ -650,10 +652,12 @@ def silu_to_gelu(model):
     for name, child in model.named_children():
 
         if isinstance(child, nn.SiLU):
-            setattr(model, name, nn.GELU)
+            setattr(model, name, nn.GELU())
 
         else:
             silu_to_gelu(child)
+
+
 
 
 def gelu_eca_nfnet_l0(seed): # 24M parameters 4.4 GMACs
@@ -669,6 +673,8 @@ def gelu_eca_nfnet_l0(seed): # 24M parameters 4.4 GMACs
 
     return model
 
+gelu_eca_nfnet_l0_supervised = gelu_eca_nfnet_l0
+
 def gelu_eca_nfnet_l1(seed): # 24M parameters 4.4 GMACs
     os.environ['https_proxy'] = 'http://proxy.example.org:3128'
     model = timm.create_model(
@@ -682,6 +688,7 @@ def gelu_eca_nfnet_l1(seed): # 24M parameters 4.4 GMACs
 
     return model
 
+gelu_eca_nfnet_l1_supervised = gelu_eca_nfnet_l1
 
 def gelu_eca_nfnet_l2(seed): # 24M parameters 4.4 GMACs
     os.environ['https_proxy'] = 'http://proxy.example.org:3128'
@@ -696,6 +703,7 @@ def gelu_eca_nfnet_l2(seed): # 24M parameters 4.4 GMACs
 
     return model
 
+gelu_eca_nfnet_l2_supervised = gelu_eca_nfnet_l2
 
 def gelu_nfnet_l0(seed): # 24M parameters 4.4 GMACs
     os.environ['https_proxy'] = 'http://proxy.example.org:3128'
@@ -710,6 +718,7 @@ def gelu_nfnet_l0(seed): # 24M parameters 4.4 GMACs
 
     return model
 
+gelu_nfnet_l0_supervised = gelu_nfnet_l0
 
 
 # Credit to Sara Pieri for the following

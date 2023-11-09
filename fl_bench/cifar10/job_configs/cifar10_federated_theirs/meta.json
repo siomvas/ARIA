@@ -1,0 +1,9 @@
+{
+    "name": "cifar10_federated_theirs_vit_b_16_supervised_100_0.01_282_alpha100.0_cifar10_fedavg",
+    "deploy_map": {
+        "cifar10_federated_theirs": [
+            "@ALL"
+        ]
+    },
+    "min_clients": 5
+}

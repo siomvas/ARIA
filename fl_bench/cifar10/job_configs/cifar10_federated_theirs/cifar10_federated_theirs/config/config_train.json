@@ -1,0 +1,14 @@
+{
+    "train_idx_root": "/path/to/FL_bench/fl_bench/cifar10/splits/alpha=100.0_seed=42",
+    "learning_rate": 0.01,
+    "fedprox_mu": 0.0,
+    "batch_size": 32,
+    "max_steps": 28200,
+    "model_name": "vit_b_16_supervised",
+    "optimizer_args": {
+        "class": "SGD",
+        "momentum": 0.9
+    },
+    "local_steps": 282,
+    "use_half_precision": true
+}
