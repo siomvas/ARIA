@@ -1,4 +1,4 @@
 # ARIA
-Code for ARIA: On the Interaction between Architectures, Initialization and Aggregation Methods and for Federated Visual Classification
+Code for ARIA: On the Interaction Between Architectures, Initialization and Aggregation Methods for Federated Visual Classification
 
 Coming soon
