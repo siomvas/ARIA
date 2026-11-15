@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the paper."
+title: "ARIA"
+authors:
+  - family-names: "Siomos"
+    given-names: "Vasilis"
+  - family-names: "Naval-Marimont"
+    given-names: "Sergio"
+  - family-names: "Passerat-Palmbach"
+    given-names: "Jonathan"
+  - family-names: "Tarroni"
+    given-names: "Giacomo"
+repository-code: "https://github.com/siomvas/ARIA"
+license: MIT
+preferred-citation:
+  title: "ARIA: On the Interaction Between Architectures, Initialization and Aggregation Methods for Federated Visual Classification"
+  authors:
+    - family-names: "Siomos"
+      given-names: "Vasilis"
+    - family-names: "Naval-Marimont"
+      given-names: "Sergio"
+    - family-names: "Passerat-Palmbach"
+      given-names: "Jonathan"
+    - family-names: "Tarroni"
+      given-names: "Giacomo"
+  type: conference-paper
+  collection-title: "2024 IEEE International Symposium on Biomedical Imaging (ISBI)"
+  year: 2024
+  start: 1
+  end: 5
+  publisher:
+    name: IEEE

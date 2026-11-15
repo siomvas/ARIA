@@ -302,3 +302,4 @@ surg_res/*
 
 skin_ssl/
 abdomen_ssl/
+!.env.example
