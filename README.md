@@ -2,9 +2,12 @@
 
 Code for **ARIA: On the Interaction Between Architectures, Initialization and Aggregation Methods for Federated Visual Classification** (IEEE ISBI 2024).
 
-[Paper (arXiv)](https://arxiv.org/abs/2311.14625)
+[![arXiv](https://img.shields.io/badge/arXiv-2311.14625-b31b1b.svg)](https://arxiv.org/abs/2311.14625)
+[![Venue](https://img.shields.io/badge/IEEE%20ISBI-2024-blue)](https://arxiv.org/abs/2311.14625)
+[![NVIDIA FLARE](https://img.shields.io/badge/NVIDIA%20FLARE-2.3-76b900)](https://github.com/NVIDIA/NVFlare)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.md)
 
-ARIA is a joint study of the three choices every federated image classifier has to make: the architecture, how it is initialized and how client models are aggregated. It benchmarks their combinations on medical image classification and shows that they have to be chosen together. This repository holds the benchmark: the federated training and evaluation code, the job configurations, the data partitions and the scripts that ran the grid.
+ARIA is a joint study of the three choices every federated image classifier has to make: the architecture, how it is initialized and how client models are aggregated. It benchmarks their combinations on medical image classification and shows that they have to be chosen together. The study covers 243 combinations: 81 of architecture, initialization and aggregation method in each of three settings, the naturally federated Fed-ISIC2019 and two Dirichlet partitions of OrganAMNIST. This repository holds the benchmark: the federated training and evaluation code, the job configurations, the data partitions and the scripts that ran the grid.
 
 ## What is here
 
