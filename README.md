@@ -64,7 +64,7 @@ python src/setup.py -job job_configs/medmnist_federated -method fedopt -alpha 10
 nvflare simulator job_configs/medmnist_federated -w /path/to/results/run_name -n 4 -gpu 0,0,0,0
 ```
 
-The shell scripts in `fl_bench/fed_isic`, `fl_bench/medmnist` and `fl_bench/extra` are the ones that produced the paper's tables. They are kept as they ran, with `/path/to` in place of the folders of our cluster.
+The shell scripts in `fl_bench/fed_isic/scripts`, `fl_bench/medmnist/scripts` and `fl_bench/extra` are the ones that produced the paper's tables. They are kept as they ran, with `/path/to` in place of the folders of our cluster.
 
 Self-supervised pre-training:
 
