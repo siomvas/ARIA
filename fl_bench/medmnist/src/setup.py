@@ -17,7 +17,7 @@ def main():
     parser.add_argument("--amp", action="store_true")
     parser.add_argument("--use_hyperion_dirs", action="store_true")
     parser.add_argument("--batch_size", type=int, default=128)
-    parser.add_argument("--train_split_root", type=str, default="/path/to/FL_bench/fl_bench/medmnist/splits/combo/")
+    parser.add_argument("--train_split_root", type=str, default=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "splits", "combo") + os.sep)
 
     args = parser.parse_args()
 

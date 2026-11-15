@@ -23,7 +23,7 @@ def main():
     parser.add_argument(
         "--train_split_root",
         type=str,
-        default="/path/to/FL_bench/res/cifar10_splits",
+        default="splits",
         help="Location where to save data splits.",
     )
     parser.add_argument(
