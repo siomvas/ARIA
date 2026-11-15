@@ -1,0 +1,186 @@
+diff -ruN '--exclude=fedopt.py' '--exclude=dxo.py' '--exclude=__pycache__' a/nvflare/apis/impl/controller.py b/nvflare/apis/impl/controller.py
+--- a/nvflare/apis/impl/controller.py
++++ b/nvflare/apis/impl/controller.py
+@@ -920,7 +920,7 @@
+         See whether the task is only waiting for response from a dead client
+         """
+         now = time.time()
+-        lead_time = ConfigService.get_float_var(name=_CONFIG_VAR_DEAD_CLIENT_CHECK_LEAD_TIME, default=30.0)
++        lead_time = ConfigService.get_float_var(name=_CONFIG_VAR_DEAD_CLIENT_CHECK_LEAD_TIME, default=240.0)
+         if now - task.schedule_time < lead_time:
+             # due to potential race conditions, we'll wait for at least 1 minute after the task
+             # is started before checking dead clients.
+@@ -988,7 +988,7 @@
+     def _client_still_alive(self, client_name):
+         now = time.time()
+         report_time = self._dead_client_reports.get(client_name, None)
+-        grace_period = ConfigService.get_float_var(name=_CONFIG_VAR_DEAD_CLIENT_GRACE_PERIOD, default=30.0)
++        grace_period = ConfigService.get_float_var(name=_CONFIG_VAR_DEAD_CLIENT_GRACE_PERIOD, default=240.0)
+ 
+         if not report_time:
+             # this client is still alive
+diff -ruN '--exclude=fedopt.py' '--exclude=dxo.py' '--exclude=__pycache__' a/nvflare/app_common/executors/multi_process_executor.py b/nvflare/app_common/executors/multi_process_executor.py
+--- a/nvflare/app_common/executors/multi_process_executor.py
++++ b/nvflare/app_common/executors/multi_process_executor.py
+@@ -210,7 +210,7 @@
+                 start = time.time()
+                 while not cell.is_cell_reachable(fqcn):
+                     time.sleep(1.0)
+-                    if time.time() - start > 60.0:
++                    if time.time() - start > 240.0:
+                         raise RuntimeError(f"Could not reach the communication cell: {fqcn}")
+                 self.targets.append(fqcn)
+             request = new_cell_message(
+diff -ruN '--exclude=fedopt.py' '--exclude=dxo.py' '--exclude=__pycache__' a/nvflare/app_common/resource_managers/auto_clean_resource_manager.py b/nvflare/app_common/resource_managers/auto_clean_resource_manager.py
+--- a/nvflare/app_common/resource_managers/auto_clean_resource_manager.py
++++ b/nvflare/app_common/resource_managers/auto_clean_resource_manager.py
+@@ -24,7 +24,7 @@
+ 
+ 
+ class AutoCleanResourceManager(ResourceManagerSpec, FLComponent, ABC):
+-    def __init__(self, resources: dict, expiration_period: int = 30, check_period: float = 1.0):
++    def __init__(self, resources: dict, expiration_period: int = 240., check_period: float = 1.0):
+         """AutoCleanResourceManager implementation.
+ 
+         It will automatically clean up reserved resources.
+diff -ruN '--exclude=fedopt.py' '--exclude=dxo.py' '--exclude=__pycache__' a/nvflare/private/fed/app/client/worker_process.py b/nvflare/private/fed/app/client/worker_process.py
+--- a/nvflare/private/fed/app/client/worker_process.py
++++ b/nvflare/private/fed/app/client/worker_process.py
+@@ -127,7 +127,7 @@
+         federated_client.fl_ctx.set_prop(EngineConstant.FL_TOKEN, args.token, private=False)
+         federated_client.fl_ctx.set_prop(FLContextKey.WORKSPACE_ROOT, args.workspace, private=True)
+ 
+-        client_app_runner = ClientAppRunner(time_out=kv_list.get("app_runner_timeout", 60.0))
++        client_app_runner = ClientAppRunner(time_out=kv_list.get("app_runner_timeout", 240.0))
+         # start parent process checking thread
+         thread = threading.Thread(target=monitor_parent_process, args=(client_app_runner, parent_pid, stop_event))
+         thread.start()
+diff -ruN '--exclude=fedopt.py' '--exclude=dxo.py' '--exclude=__pycache__' a/nvflare/private/fed/app/deployer/simulator_deployer.py b/nvflare/private/fed/app/deployer/simulator_deployer.py
+--- a/nvflare/private/fed/app/deployer/simulator_deployer.py
++++ b/nvflare/private/fed/app/deployer/simulator_deployer.py
+@@ -134,7 +134,7 @@
+                     },
+                 }
+             ],
+-            "client": {"retry_timeout": 30, "compression": "Gzip"},
++            "client": {"retry_timeout": 60, "compression": "Gzip"},
+         }
+ 
+         resources = os.path.join(args.workspace, "local/resources.json")
+diff -ruN '--exclude=fedopt.py' '--exclude=dxo.py' '--exclude=__pycache__' a/nvflare/private/fed/app/simulator/simulator_runner.py b/nvflare/private/fed/app/simulator/simulator_runner.py
+--- a/nvflare/private/fed/app/simulator/simulator_runner.py
++++ b/nvflare/private/fed/app/simulator/simulator_runner.py
+@@ -464,7 +464,7 @@
+             self.logger.info("Start the clients run simulation.")
+             executor = ThreadPoolExecutor(max_workers=self.args.threads)
+             lock = threading.Lock()
+-            timeout = self.kv_list.get("simulator_worker_timeout", 60.0)
++            timeout = self.kv_list.get("simulator_worker_timeout", 240.0)
+             for i in range(self.args.threads):
+                 executor.submit(lambda p: self.run_client_thread(*p), [self.args.threads, gpu, lock, timeout])
+ 
+@@ -488,7 +488,7 @@
+             # Ignore the exception for the simulator client shutdown
+             self.logger.warn(f"Exception happened to client{client.name} during shutdown ")
+ 
+-    def run_client_thread(self, num_of_threads, gpu, lock, timeout=60):
++    def run_client_thread(self, num_of_threads, gpu, lock, timeout=240):
+         stop_run = False
+         interval = 1
+         client_to_run = None  # indicates the next client to run
+@@ -509,7 +509,7 @@
+         except BaseException as e:
+             self.logger.error(f"run_client_thread error: {secure_format_exception(e)}")
+ 
+-    def do_one_task(self, client, num_of_threads, gpu, lock, timeout=60.0):
++    def do_one_task(self, client, num_of_threads, gpu, lock, timeout=240.0):
+         open_port = get_open_ports(1)[0]
+         command = (
+             sys.executable
+@@ -561,7 +561,7 @@
+ 
+         return stop_run, next_client
+ 
+-    def _create_connection(self, open_port, timeout=60.0):
++    def _create_connection(self, open_port, timeout=240.0):
+         conn = None
+         start = time.time()
+         while not conn:
+diff -ruN '--exclude=fedopt.py' '--exclude=dxo.py' '--exclude=__pycache__' a/nvflare/private/fed/client/client_app_runner.py b/nvflare/private/fed/client/client_app_runner.py
+--- a/nvflare/private/fed/client/client_app_runner.py
++++ b/nvflare/private/fed/client/client_app_runner.py
+@@ -32,7 +32,7 @@
+ 
+     logger = logging.getLogger("ClientAppRunner")
+ 
+-    def __init__(self, time_out=60.0) -> None:
++    def __init__(self, time_out=240.0) -> None:
+         super().__init__()
+         self.command_agent = None
+         self.timeout = time_out
+diff -ruN '--exclude=fedopt.py' '--exclude=dxo.py' '--exclude=__pycache__' a/nvflare/private/fed/client/communicator.py b/nvflare/private/fed/client/communicator.py
+--- a/nvflare/private/fed/client/communicator.py
++++ b/nvflare/private/fed/client/communicator.py
+@@ -119,7 +119,7 @@
+ 
+         while not self.cell.is_cell_connected(FQCN.ROOT_SERVER):
+             time.sleep(0.1)
+-            if time.time() - start > 30.0:
++            if time.time() - start > 240.0:
+                 raise FLCommunicationError("error:Could not connect to the server for client_registration.")
+ 
+         while True:
+diff -ruN '--exclude=fedopt.py' '--exclude=dxo.py' '--exclude=__pycache__' a/nvflare/private/fed/client/fed_client_base.py b/nvflare/private/fed/client/fed_client_base.py
+--- a/nvflare/private/fed/client/fed_client_base.py
++++ b/nvflare/private/fed/client/fed_client_base.py
+@@ -61,7 +61,7 @@
+         client_args,
+         secure_train,
+         server_args=None,
+-        retry_timeout=30,
++        retry_timeout=240,
+         client_state_processors: Optional[List[Filter]] = None,
+         handlers: Optional[List[FLComponent]] = None,
+         compression=None,
+@@ -103,7 +103,7 @@
+             compression=compression,
+             cell=cell,
+             client_register_interval=client_args.get("client_register_interval", 2.0),
+-            timeout=client_args.get("communication_timeout", 30.0),
++            timeout=client_args.get("communication_timeout", 240.0),
+         )
+ 
+         self.secure_train = secure_train
+@@ -316,7 +316,7 @@
+                 start = time.time()
+                 while not self.engine:
+                     time.sleep(1.0)
+-                    if time.time() - start > 60.0:
++                    if time.time() - start > 240.0:
+                         raise RuntimeError("No engine created. Failed to start the heartbeat process.")
+                 self.communicator.send_heartbeat(
+                     self.servers, project_name, self.token, self.ssid, self.client_name, self.engine, interval
+diff -ruN '--exclude=fedopt.py' '--exclude=dxo.py' '--exclude=__pycache__' a/nvflare/private/fed/server/server_commands.py b/nvflare/private/fed/server/server_commands.py
+--- a/nvflare/private/fed/server/server_commands.py
++++ b/nvflare/private/fed/server/server_commands.py
+@@ -112,7 +112,7 @@
+             start_time = time.time()
+             while engine.engine_info.status != MachineStatus.STOPPED:
+                 time.sleep(1.0)
+-                if time.time() - start_time > 30.0:
++                if time.time() - start_time > 240.0:
+                     break
+         return "Aborted the run"
+ 
+diff -ruN '--exclude=fedopt.py' '--exclude=dxo.py' '--exclude=__pycache__' a/nvflare/private/fed/server/server_engine.py b/nvflare/private/fed/server/server_engine.py
+--- a/nvflare/private/fed/server/server_engine.py
++++ b/nvflare/private/fed/server/server_engine.py
+@@ -529,7 +529,7 @@
+         # repeatedly ask the parent process to get participating clients until we receive the result
+         # or timed out after 30 secs (already tried 30 times).
+         start = time.time()
+-        max_wait = 30.0
++        max_wait = 240.0
+         job_id = self.args.job_id
+         while True:
+             clients = self._retrieve_clients_data(job_id)

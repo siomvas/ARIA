@@ -18,10 +18,16 @@ from typing import Any, Dict
 import numpy as np
 import torch
 
-from nvflare.apis.dxo import DataKind, from_file
+from nvflare.apis.dxo import DXO, DataKind, from_bytes
 from nvflare.apis.fl_context import FLContext
 from nvflare.app_common.abstract.formatter import Formatter
 from nvflare.app_common.app_constant import AppConstants
+
+
+def from_file(file_path: str) -> DXO:
+    """Read a validation result that NVFlare 2.3 wrote with DXO.to_bytes."""
+    with open(file_path, "rb") as f:
+        return from_bytes(f.read())
 
 
 def array_to_list(data: Any) -> Any:
