@@ -1,9 +1,0 @@
-{
-    "name": "cifar10_federated",
-    "deploy_map": {
-        "cifar10_federated": [
-            "@ALL"
-        ]
-    },
-    "min_clients": 8
-}
