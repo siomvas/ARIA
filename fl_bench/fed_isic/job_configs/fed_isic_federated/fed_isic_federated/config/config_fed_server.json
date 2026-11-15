@@ -49,7 +49,7 @@
         },
         {
             "id": "shareable_generator_fedopt",
-            "name": "PTFedOptModelShareableGenerator",
+            "path": "fl_bench.utils.fedopt.PTFedOptModelShareableGenerator",
             "args": {
                 "device": "cuda:0",
                 "source_model": "model",

@@ -34,7 +34,7 @@
       },
       {
           "id": "shareable_generator_fedopt",
-          "name": "PTFedOptModelShareableGenerator",
+          "path": "fl_bench.utils.fedopt.PTFedOptModelShareableGenerator",
           "args": {
               "device": "cpu",
               "source_model": "model",
