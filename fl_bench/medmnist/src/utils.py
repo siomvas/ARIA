@@ -127,9 +127,7 @@ class MedMNISTDataSplitter(FLComponent):
 
         # write to files
         if self.split_dir is None:
-            raise ValueError(
-                "You need to define a valid `split_dir` when splitting the data."
-            )
+            raise ValueError("You need to define a valid `split_dir` when splitting the data.")
         if not os.path.isdir(self.split_dir):
             os.makedirs(self.split_dir)
         sum_file_name = os.path.join(self.split_dir, "summary.txt")
@@ -146,11 +144,7 @@ class MedMNISTDataSplitter(FLComponent):
 
     def load_medmnist_data(self):
         # download data
-        train_dataset = medmnist.OrganAMNIST(
-            root=os.getenv("MEDMNIST_ROOT"),
-            split="train",
-            download=True
-        )
+        train_dataset = medmnist.OrganAMNIST(root=os.getenv("MEDMNIST_ROOT"), split="train", download=True)
 
         # only training label is needed for doing split
         train_label = np.array(train_dataset.labels)
@@ -174,17 +168,11 @@ class MedMNISTDataSplitter(FLComponent):
                 proportions = np.random.dirichlet(np.repeat(self.alpha, self.num_sites))
                 # Balance
                 proportions = np.array(
-                    [
-                        p * (len(idx_j) < N / self.num_sites)
-                        for p, idx_j in zip(proportions, idx_batch)
-                    ]
+                    [p * (len(idx_j) < N / self.num_sites) for p, idx_j in zip(proportions, idx_batch)]
                 )
                 proportions = proportions / proportions.sum()
                 proportions = (np.cumsum(proportions) * len(idx_k)).astype(int)[:-1]
-                idx_batch = [
-                    idx_j + idx.tolist()
-                    for idx_j, idx in zip(idx_batch, np.split(idx_k, proportions))
-                ]
+                idx_batch = [idx_j + idx.tolist() for idx_j, idx in zip(idx_batch, np.split(idx_k, proportions))]
                 min_size = min([len(idx_j) for idx_j in idx_batch])
 
         # shuffle
@@ -234,9 +222,7 @@ class ComboSplitter(FLComponent):
 
         # write to files
         if self.split_dir is None:
-            raise ValueError(
-                "You need to define a valid `split_dir` when splitting the data."
-            )
+            raise ValueError("You need to define a valid `split_dir` when splitting the data.")
         if not os.path.isdir(self.split_dir):
             os.makedirs(self.split_dir)
         sum_file_name = os.path.join(self.split_dir, "summary.txt")
@@ -245,11 +231,11 @@ class ComboSplitter(FLComponent):
             sum_file.write(f"Dirichlet sampling parameter: {self.alpha} \n")
             sum_file.write("Train Class counts for each client: \n")
             # sum_file.write(json.dumps(class_sum))
-            pretty_json_str = pprint.pformat(json.dumps(class_sum_train), compact=True, indent=2).replace("'",'"')
+            pretty_json_str = pprint.pformat(json.dumps(class_sum_train), compact=True, indent=2).replace("'", '"')
             sum_file.write(pretty_json_str)
             sum_file.write("\n")
             sum_file.write("Val Class counts for each client: \n")
-            pretty_json_str = pprint.pformat(json.dumps(class_sum_val), compact=True, indent=2).replace("'",'"')
+            pretty_json_str = pprint.pformat(json.dumps(class_sum_val), compact=True, indent=2).replace("'", '"')
             sum_file.write(pretty_json_str)
 
         site_file_path = os.path.join(self.split_dir, "site-")
@@ -262,16 +248,8 @@ class ComboSplitter(FLComponent):
     def load_medmnist_data(self):
         # download data
         data_dir = os.getenv("MEDMNIST_ROOT") if not self.hyperion else os.getenv("HYPERION_MEDMNIST_ROOT")
-        train_dataset = medmnist.OrganAMNIST(
-            root=data_dir,
-            split="train",
-            download=True
-        )
-        val_dataset = medmnist.OrganAMNIST(
-            root=data_dir,
-            split="val",
-            download=True
-        )
+        train_dataset = medmnist.OrganAMNIST(root=data_dir, split="train", download=True)
+        val_dataset = medmnist.OrganAMNIST(root=data_dir, split="val", download=True)
 
         # only labels needed
         train_label = np.array(train_dataset.labels)
@@ -296,16 +274,12 @@ class ComboSplitter(FLComponent):
                 proportions = np.random.dirichlet(np.repeat(self.alpha, self.num_sites))
                 # Balance
                 proportions = np.array(
-                    [
-                        p * (len(idx_j) < N / self.num_sites)
-                        for p, idx_j in zip(proportions, idx_batch_train)
-                    ]
+                    [p * (len(idx_j) < N / self.num_sites) for p, idx_j in zip(proportions, idx_batch_train)]
                 )
                 proportions = proportions / proportions.sum()
                 proportions = (np.cumsum(proportions) * len(idx_k)).astype(int)[:-1]
                 idx_batch_train = [
-                    idx_j + idx.tolist()
-                    for idx_j, idx in zip(idx_batch_train, np.split(idx_k, proportions))
+                    idx_j + idx.tolist() for idx_j, idx in zip(idx_batch_train, np.split(idx_k, proportions))
                 ]
                 min_size = min([len(idx_j) for idx_j in idx_batch_train])
 
@@ -323,16 +297,12 @@ class ComboSplitter(FLComponent):
                 proportions = np.random.dirichlet(np.repeat(self.alpha, self.num_sites))
                 # Balance
                 proportions = np.array(
-                    [
-                        p * (len(idx_j) < N / self.num_sites)
-                        for p, idx_j in zip(proportions, idx_batch_val)
-                    ]
+                    [p * (len(idx_j) < N / self.num_sites) for p, idx_j in zip(proportions, idx_batch_val)]
                 )
                 proportions = proportions / proportions.sum()
                 proportions = (np.cumsum(proportions) * len(idx_k)).astype(int)[:-1]
                 idx_batch_val = [
-                    idx_j + idx.tolist()
-                    for idx_j, idx in zip(idx_batch_val, np.split(idx_k, proportions))
+                    idx_j + idx.tolist() for idx_j, idx in zip(idx_batch_val, np.split(idx_k, proportions))
                 ]
                 min_size = min([len(idx_j) for idx_j in idx_batch_val])
 

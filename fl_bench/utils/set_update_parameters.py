@@ -18,7 +18,7 @@ def write_json(data, filename):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-dataset", type=str, choices=['cifar10', 'prostate_2d'], default='cifar10')
+    parser.add_argument("-dataset", type=str, choices=["cifar10", "prostate_2d"], default="cifar10")
     parser.add_argument("-job", type=str, help="Path to job config.")
     parser.add_argument(
         "--train_split_root",
@@ -35,12 +35,7 @@ def main():
         "Values of <= 0. means no data sampling. "
         "Assumes central training.",
     )
-    parser.add_argument(
-        "-learner",
-        type=str,
-        default='baseline',
-        choices=['baseline', 'adamw', 'savemore', 'scaffold']
-    )
+    parser.add_argument("-learner", type=str, default="baseline", choices=["baseline", "adamw", "savemore", "scaffold"])
     parser.add_argument(
         "--model_name",
         type=str,
@@ -50,7 +45,7 @@ def main():
     parser.add_argument(
         "-save_freq",
         type=int,
-        default= 10,
+        default=10,
         help="Saving frequency for local models. Creates num_rounds // save_freq * n_clients models",
     )
 
@@ -60,22 +55,14 @@ def main():
         default=argparse.SUPPRESS,
         help="number of global rounds",
     )
-    parser.add_argument(
-        "--lr", type=float, default=argparse.SUPPRESS, help="local learning rate"
-    )
-    parser.add_argument(
-        "--epochs", type=int, default=argparse.SUPPRESS, help="local aggregation epochs"
-    )
+    parser.add_argument("--lr", type=float, default=argparse.SUPPRESS, help="local learning rate")
+    parser.add_argument("--epochs", type=int, default=argparse.SUPPRESS, help="local aggregation epochs")
 
     args = parser.parse_args()
 
     job_name = os.path.basename(args.job)
-    client_config_filename = os.path.join(
-        args.job, job_name, "config", "config_fed_client.json"
-    )
-    server_config_filename = os.path.join(
-        args.job, job_name, "config", "config_fed_server.json"
-    )
+    client_config_filename = os.path.join(args.job, job_name, "config", "config_fed_client.json")
+    server_config_filename = os.path.join(args.job, job_name, "config", "config_fed_server.json")
     meta_config_filename = os.path.join(args.job, "meta.json")
     client_config = read_json(client_config_filename)
     server_config = read_json(server_config_filename)
@@ -138,16 +125,12 @@ def main():
         meta_config = read_json(meta_config_filename)
         print(f"Setting model name to {args.model_name}")
         job_name = f"{job_name}_model={args.model_name}"
-        if args.dataset == 'cifar10':
+        if args.dataset == "cifar10":
             client_config["components"][0]["args"]["model_arch"] = args.model_name
-            server_config["model_path"] = (
-                "fl_bench.networks.cifar10_nets." + args.model_name
-            )
-        elif args.dataset == 'prostate_2d':
+            server_config["model_path"] = "fl_bench.networks.cifar10_nets." + args.model_name
+        elif args.dataset == "prostate_2d":
             client_config["components"][0]["args"]["model_arch"] = args.model_name
-            server_config["model_path"] = (
-                "fl_bench.networks.prostate2d_nets." + args.model_name
-            )
+            server_config["model_path"] = "fl_bench.networks.prostate2d_nets." + args.model_name
         meta_config["name"] = job_name
         write_json(client_config, client_config_filename)
         write_json(server_config, server_config_filename)

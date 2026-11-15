@@ -93,8 +93,8 @@ class ReportGenerator(Widget):
                     f.write(pretty_json_str)
                     f.write("\n")
                     f.write("Average Metrics \n")
-                    f.write(f'{self.final_avg} \n')
-                    f.write(f'{sum(self.final_avg) / len(self.final_avg)} \n')
+                    f.write(f"{self.final_avg} \n")
+                    f.write(f"{sum(self.final_avg) / len(self.final_avg)} \n")
             else:  # ".yaml" or ".yml"
                 yaml = YAML()
                 with open(output_file_path, "w") as f:

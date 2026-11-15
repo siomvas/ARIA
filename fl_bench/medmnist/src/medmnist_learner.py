@@ -12,9 +12,7 @@ from nvflare.apis.fl_constant import FLContextKey
 from nvflare.apis.fl_context import FLContext
 from nvflare.apis.shareable import ReturnCode, Shareable, make_reply
 from nvflare.app_common.abstract.learner_spec import Learner
-from nvflare.app_common.app_constant import (AlgorithmConstants,
-                                             AppConstants, ModelName,
-                                             ValidateType)
+from nvflare.app_common.app_constant import AlgorithmConstants, AppConstants, ModelName, ValidateType
 from prettytable import PrettyTable
 from torch.utils.tensorboard.writer import SummaryWriter
 
@@ -82,7 +80,7 @@ class MedMNISTLearner(Learner):
             client_idx=fl_ctx.get_identity_name(),
             central=self.central,
             batch_size=config_train["batch_size"],
-            seed=self.seed
+            seed=self.seed,
         )
         self.local_steps = config_train["local_steps"]
         # Initialize variables
@@ -108,7 +106,7 @@ class MedMNISTLearner(Learner):
         self.log_info(fl_ctx, f"Current/Total Round: {current_round + 1}/{num_rounds}")
         self.log_info(fl_ctx, f"Client identity: {fl_ctx.get_identity_name()}")
 
-        if self.method == 'scaffold':
+        if self.method == "scaffold":
             dxo_collection = from_shareable(data)
             if dxo_collection.data_kind != DataKind.COLLECTION:
                 self.log_error(
@@ -156,7 +154,7 @@ class MedMNISTLearner(Learner):
                 break
             except Exception as e:
                 if i < self.max_retry:
-                    self.log_warning(fl_ctx, f"Something wrong in training, retrying ({i+1}/{self.max_retry}).")
+                    self.log_warning(fl_ctx, f"Something wrong in training, retrying ({i + 1}/{self.max_retry}).")
                     # Restore trainer states to the beginning of the round
                     if os.path.exists(self.last_model_path):
                         self.trainer.load_checkpoint(self.last_model_path, self.model)
@@ -175,7 +173,7 @@ class MedMNISTLearner(Learner):
                 break
             except Exception as e:
                 if i < self.max_retry:
-                    self.log_warning(fl_ctx, f"Something wrong in val, retrying ({i+1}/{self.max_retry}).")
+                    self.log_warning(fl_ctx, f"Something wrong in val, retrying ({i + 1}/{self.max_retry}).")
                     # Reset dataset & dataloader
                     self.dm.teardown()
                     self.dm.setup()
@@ -212,7 +210,7 @@ class MedMNISTLearner(Learner):
             meta={MetaKey.NUM_STEPS_CURRENT_ROUND: self.local_steps},
         )
 
-        if self.method == 'scaffold':
+        if self.method == "scaffold":
             # Create a DXO collection with weights and scaffold controls
             dxo_weights_diff_ctrl = DXO(
                 data_kind=DataKind.WEIGHT_DIFF,
@@ -220,9 +218,9 @@ class MedMNISTLearner(Learner):
                 meta={MetaKey.NUM_STEPS_CURRENT_ROUND: self.local_steps},
             )
             collection_data = {
-                    AppConstants.MODEL_WEIGHTS: dxo,
-                    AlgorithmConstants.SCAFFOLD_CTRL_DIFF: dxo_weights_diff_ctrl,
-                }
+                AppConstants.MODEL_WEIGHTS: dxo,
+                AlgorithmConstants.SCAFFOLD_CTRL_DIFF: dxo_weights_diff_ctrl,
+            }
 
             dxo = DXO(data_kind=DataKind.COLLECTION, data=collection_data)
 
@@ -268,7 +266,7 @@ class MedMNISTLearner(Learner):
                 break
             except Exception as e:
                 if i < self.max_retry:
-                    self.log_warning(fl_ctx, f"Error encountered in validation, retrying ({i+1}/{self.max_retry}).")
+                    self.log_warning(fl_ctx, f"Error encountered in validation, retrying ({i + 1}/{self.max_retry}).")
                     # Cleanup previous dataset & dataloader
                     self.dm.teardown()
                     self.dm.setup()
@@ -278,7 +276,7 @@ class MedMNISTLearner(Learner):
 
         self.log_info(
             fl_ctx,
-            f"Validation metrics of {model_owner}'s model on" f" {fl_ctx.get_identity_name()}'s data: {raw_metrics}",
+            f"Validation metrics of {model_owner}'s model on {fl_ctx.get_identity_name()}'s data: {raw_metrics}",
         )
 
         # For validation before training, only key metric is needed
@@ -307,7 +305,7 @@ class MedMNISTLearner(Learner):
             if model_data:
                 data = {}
                 for var_name in model_data["model"]:
-                    data[var_name] = model_data['model'][var_name].numpy()
+                    data[var_name] = model_data["model"][var_name].numpy()
                 dxo = DXO(data_kind=DataKind.WEIGHTS, data=data)
                 return dxo.to_shareable()
             else:

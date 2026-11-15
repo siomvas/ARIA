@@ -8,7 +8,6 @@ def get_lr_values(optimizer: Optimizer):
 
 
 class AltScaffoldHelper(object):
-
     def __init__(self):
         self.cnt = 0
         self.c_global = None
@@ -54,11 +53,10 @@ class AltScaffoldHelper(object):
                 c_new_para[key] = torch.zeros_like(c_new_para[key])
             else:
                 c_new_para[key] = (
-                    c_new_para[key] -
-                    c_global_para[key] +
-                    (global_model_para[key] - net_para[key]) /
-                    (self.cnt * curr_lr)
-                    )
+                    c_new_para[key]
+                    - c_global_para[key]
+                    + (global_model_para[key] - net_para[key]) / (self.cnt * curr_lr)
+                )
             self.c_delta_para[key] = (c_new_para[key] - c_local_para[key]).cpu().numpy()
         self.c_local.load_state_dict(c_new_para)
 

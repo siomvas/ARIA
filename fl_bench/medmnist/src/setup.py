@@ -3,34 +3,37 @@ import os
 import json
 from fl_bench.medmnist.src.utils import read_json, write_json
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-job", type=str, help="Path to job config.")
-    parser.add_argument("-method", type=str, default='fedavg', choices=['central', 'fedavg', 'fedprox', 'fedopt', 'scaffold', 'fedinit'])
+    parser.add_argument(
+        "-method", type=str, default="fedavg", choices=["central", "fedavg", "fedprox", "fedopt", "scaffold", "fedinit"]
+    )
     parser.add_argument("-alpha", type=float, default=1)
     parser.add_argument("-model_name", type=str, default=argparse.SUPPRESS)
     parser.add_argument("-num_rounds", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-local_steps", type=int, default=argparse.SUPPRESS)
     parser.add_argument("-lr", type=float, default=argparse.SUPPRESS)
-    parser.add_argument("--opt_args", type=str, default=argparse.SUPPRESS, help="optimizer arguments, pass as 'k:v, k:v'")
+    parser.add_argument(
+        "--opt_args", type=str, default=argparse.SUPPRESS, help="optimizer arguments, pass as 'k:v, k:v'"
+    )
     parser.add_argument("-seed", type=int, default=222)
     parser.add_argument("--amp", action="store_true")
     parser.add_argument("--use_hyperion_dirs", action="store_true")
     parser.add_argument("--batch_size", type=int, default=128)
-    parser.add_argument("--train_split_root", type=str, default=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "splits", "combo") + os.sep)
+    parser.add_argument(
+        "--train_split_root",
+        type=str,
+        default=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "splits", "combo") + os.sep,
+    )
 
     args = parser.parse_args()
 
     job_name = os.path.basename(args.job)
-    client_config_filename = os.path.join(
-        args.job, job_name, "config", "config_fed_client.json"
-    )
-    server_config_filename = os.path.join(
-        args.job, job_name, "config", "config_fed_server.json"
-    )
-    train_config_filename = os.path.join(
-        args.job, job_name, "config", "config_train.json"
-    )
+    client_config_filename = os.path.join(args.job, job_name, "config", "config_fed_client.json")
+    server_config_filename = os.path.join(args.job, job_name, "config", "config_fed_server.json")
+    train_config_filename = os.path.join(args.job, job_name, "config", "config_train.json")
     meta_config_filename = os.path.join(args.job, "meta.json")
 
     client_config = read_json(client_config_filename)
@@ -43,19 +46,19 @@ def main():
     model_path = f"fl_bench.networks.medmnist_nets.{args.model_name}"
     server_config["model_path"] = model_path
     train_config["model_name"] = args.model_name
-    job_name += f'_{args.model_name}'
+    job_name += f"_{args.model_name}"
     # update rounds
     print(f"Setting num_rounds = {args.num_rounds}")
     server_config["num_rounds"] = args.num_rounds
-    job_name += f'_{args.num_rounds}'
+    job_name += f"_{args.num_rounds}"
     # update lr
     print(f"Setting lr = {args.lr}")
     train_config["learning_rate"] = args.lr
-    job_name += f'_{args.lr}'
+    job_name += f"_{args.lr}"
     # update local steps
     print(f"Setting local steps = {args.local_steps}")
     train_config["local_steps"] = args.local_steps
-    job_name += f'_{args.local_steps}'
+    job_name += f"_{args.local_steps}"
 
     # update max steps
     print(f"Setting max steps = {args.num_rounds * args.local_steps}")
@@ -76,14 +79,14 @@ def main():
 
     # update method
     # convert central to fedavg for config
-    if args.method == 'central':
-        args.method = 'fedavg'
+    if args.method == "central":
+        args.method = "fedavg"
 
     print(f"Setting method = {args.method}")
     client_config["components"][0]["args"]["method"] = args.method
 
     # FedOpt requires a different shareable generator
-    if args.method == 'fedopt':
+    if args.method == "fedopt":
         server_config["workflows"][0]["args"]["shareable_generator_id"] = "shareable_generator_fedopt"
     else:
         server_config["workflows"][0]["args"]["shareable_generator_id"] = "shareable_generator_base"
@@ -94,24 +97,32 @@ def main():
     # 3. Different aggregator
     # 4. Different scatter and gather workflow
 
-    if args.method == 'scaffold':
-        server_config['task_result_filters'] = [{
-            "tasks": ["train", "submit_model", "validate"],
-            "filters": [{"name": "ExcludeVars", "args": {"exclude_vars": "(?:num_batches_tracked)|(?:attn.relative_position_index)"}}]
-        }]
-        server_config['components'][5]['args']['expected_data_kind'] = {
-            "_model_weights_": "WEIGHT_DIFF", "scaffold_c_diff": "WEIGHT_DIFF"
+    if args.method == "scaffold":
+        server_config["task_result_filters"] = [
+            {
+                "tasks": ["train", "submit_model", "validate"],
+                "filters": [
+                    {
+                        "name": "ExcludeVars",
+                        "args": {"exclude_vars": "(?:num_batches_tracked)|(?:attn.relative_position_index)"},
+                    }
+                ],
+            }
+        ]
+        server_config["components"][5]["args"]["expected_data_kind"] = {
+            "_model_weights_": "WEIGHT_DIFF",
+            "scaffold_c_diff": "WEIGHT_DIFF",
         }
         server_config["workflows"][0]["name"] = "ScatterAndGatherScaffold"
 
     else:
-        server_config['task_result_filters'] = []
+        server_config["task_result_filters"] = []
         for i in [4, 5]:
-            if server_config['components'][i]['id'] == 'aggregator':
-                server_config['components'][i]['args']['expected_data_kind'] = "WEIGHT_DIFF"
+            if server_config["components"][i]["id"] == "aggregator":
+                server_config["components"][i]["args"]["expected_data_kind"] = "WEIGHT_DIFF"
         server_config["workflows"][0]["name"] = "ScatterAndGather"
 
-    job_name += f'_medmnist_{args.method}'
+    job_name += f"_medmnist_{args.method}"
     # update seed
     print(f"Setting seed = {args.seed}")
     client_config["components"][0]["args"]["seed"] = args.seed

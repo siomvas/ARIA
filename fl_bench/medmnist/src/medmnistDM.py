@@ -17,15 +17,9 @@ def seed_worker(worker_id):
     random.seed(worker_seed)
 
 
-class MedMNISTDataModule():
+class MedMNISTDataModule:
     def __init__(
-        self,
-        data_dir: str,
-        train_idx_root: str,
-        client_idx: str,
-        central: bool,
-        batch_size: int = 64,
-        seed: int = 0
+        self, data_dir: str, train_idx_root: str, client_idx: str, central: bool, batch_size: int = 64, seed: int = 0
     ):
         self.seed = seed
         seed_everything(seed)
@@ -34,16 +28,16 @@ class MedMNISTDataModule():
         self.train_idx_root = train_idx_root
         self.central = central
         self.batch_size = batch_size
-        self.transform_train = transforms.Compose([
-            transforms.Grayscale(3),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[.5], std=[.5]),
-            transforms.Resize((224, 224), antialias=True)
-        ])
+        self.transform_train = transforms.Compose(
+            [
+                transforms.Grayscale(3),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.5], std=[0.5]),
+                transforms.Resize((224, 224), antialias=True),
+            ]
+        )
         self.transform_valid = self.transform_train
-        self.target_transform = transforms.Compose([
-            lambda x: x.squeeze(-1)
-        ])
+        self.target_transform = transforms.Compose([lambda x: x.squeeze(-1)])
         self.setup()
 
     def setup(self):
@@ -59,7 +53,7 @@ class MedMNISTDataModule():
 
         whole_dset = medmnist.OrganAMNIST(
             root=self.data_dir,
-            split='train',
+            split="train",
             download=False,
             transform=self.transform_train,
             target_transform=self.target_transform,
@@ -78,21 +72,28 @@ class MedMNISTDataModule():
             split="val",
             download=False,
             transform=self.transform_valid,
-            target_transform=self.target_transform
-            )
+            target_transform=self.target_transform,
+        )
 
         self.test_dataset = medmnist.OrganAMNIST(
             root=self.data_dir,
             split="test",
             download=False,
             transform=self.transform_valid,
-            target_transform=self.target_transform
-            )
+            target_transform=self.target_transform,
+        )
 
         g = torch.Generator()
         g.manual_seed(self.seed)
 
-        self.train_dataloader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=4, pin_memory=True, worker_init_fn=seed_worker, generator=g)
+        self.train_dataloader = DataLoader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            num_workers=4,
+            pin_memory=True,
+            worker_init_fn=seed_worker,
+            generator=g,
+        )
         self.val_dataloader = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=4)
         self.test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=4)
 
@@ -103,15 +104,9 @@ class MedMNISTDataModule():
         self.val_dataloader = {}
 
 
-class ComboOrganAMNISTDataModule():
+class ComboOrganAMNISTDataModule:
     def __init__(
-        self,
-        data_dir: str,
-        idx_root: str,
-        client_idx: str,
-        central: bool,
-        batch_size: int = 64,
-        seed: int = 0
+        self, data_dir: str, idx_root: str, client_idx: str, central: bool, batch_size: int = 64, seed: int = 0
     ):
         self.seed = seed
         seed_everything(seed)
@@ -120,16 +115,16 @@ class ComboOrganAMNISTDataModule():
         self.idx_root = idx_root
         self.central = central
         self.batch_size = batch_size
-        self.transform_train = transforms.Compose([
-            transforms.Grayscale(3),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[.5], std=[.5]),
-            transforms.Resize((224, 224), antialias=True)
-        ])
+        self.transform_train = transforms.Compose(
+            [
+                transforms.Grayscale(3),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.5], std=[0.5]),
+                transforms.Resize((224, 224), antialias=True),
+            ]
+        )
         self.transform_valid = self.transform_train
-        self.target_transform = transforms.Compose([
-            lambda x: x.squeeze(-1)
-        ])
+        self.target_transform = transforms.Compose([lambda x: x.squeeze(-1)])
         self.setup()
 
     def setup(self):
@@ -148,19 +143,21 @@ class ComboOrganAMNISTDataModule():
 
         whole_tset = medmnist.OrganAMNIST(
             root=self.data_dir,
-            split='train',
+            split="train",
             download=False,
             transform=self.transform_train,
             target_transform=self.target_transform,
         )
         whole_vset = medmnist.OrganAMNIST(
             root=self.data_dir,
-            split='val',
+            split="val",
             download=False,
             transform=self.transform_valid,
             target_transform=self.target_transform,
         )
-        self.train_dataset = torch.utils.data.Subset(whole_tset, site_idx_train) if site_idx_train is not None else whole_tset
+        self.train_dataset = (
+            torch.utils.data.Subset(whole_tset, site_idx_train) if site_idx_train is not None else whole_tset
+        )
         self.val_dataset = torch.utils.data.Subset(whole_vset, site_idx_val) if site_idx_val is not None else whole_vset
         self.combo_dataset = torch.utils.data.ConcatDataset([self.train_dataset, self.val_dataset])
 
@@ -169,15 +166,24 @@ class ComboOrganAMNISTDataModule():
             split="test",
             download=False,
             transform=self.transform_valid,
-            target_transform=self.target_transform
-            )
+            target_transform=self.target_transform,
+        )
 
         g = torch.Generator()
         g.manual_seed(self.seed)
 
-        self.train_dataloader = DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=4, worker_init_fn=seed_worker, generator=g)
+        self.train_dataloader = DataLoader(
+            self.train_dataset, batch_size=self.batch_size, num_workers=4, worker_init_fn=seed_worker, generator=g
+        )
         self.val_dataloader = DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=4)
-        self.combo_dataloader = DataLoader(self.combo_dataset, batch_size=self.batch_size, shuffle=True, num_workers=4, worker_init_fn=seed_worker, generator=g)
+        self.combo_dataloader = DataLoader(
+            self.combo_dataset,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=4,
+            worker_init_fn=seed_worker,
+            generator=g,
+        )
         self.test_dataloader = DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=4)
 
     def teardown(self):

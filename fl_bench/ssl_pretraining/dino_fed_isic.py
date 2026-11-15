@@ -27,21 +27,19 @@ class DINO(pl.LightningModule):
     def __init__(
         self,
         input_dim: int = 512,
-        model_name: str = 'resnet_18',
+        model_name: str = "resnet_18",
         seed: int = 1,
     ):
         super().__init__()
         self.model_name = model_name
         baseline = eval(model_name + f"({seed})")
         if self.model_name == "vit_b_16":
-            backbone = torch.hub.load('facebookresearch/dino:main', 'dino_vitb16', pretrained=False)
+            backbone = torch.hub.load("facebookresearch/dino:main", "dino_vitb16", pretrained=False)
             input_dim = backbone.embed_dim
         elif self.model_name == "densenet_121":
-            backbone = torch.nn.Sequential(*[
-                baseline.features,
-                torch.nn.ReLU(inplace=True),
-                torch.nn.AdaptiveAvgPool2d((1, 1))
-            ])
+            backbone = torch.nn.Sequential(
+                *[baseline.features, torch.nn.ReLU(inplace=True), torch.nn.AdaptiveAvgPool2d((1, 1))]
+            )
         elif self.model_name == "nf_resnet50":
             backbone = baseline
             backbone.reset_classifier(0)
@@ -49,14 +47,9 @@ class DINO(pl.LightningModule):
             backbone = torch.nn.Sequential(*list(baseline.children())[:-1])
 
         self.student_backbone = backbone
-        self.student_head = DINOProjectionHead(
-            input_dim=input_dim,
-            output_dim=8192,
-            freeze_last_layer=1)
+        self.student_head = DINOProjectionHead(input_dim=input_dim, output_dim=8192, freeze_last_layer=1)
         self.teacher_backbone = copy.deepcopy(backbone)
-        self.teacher_head = DINOProjectionHead(
-            input_dim=input_dim,
-            output_dim=8192)
+        self.teacher_head = DINOProjectionHead(input_dim=input_dim, output_dim=8192)
         deactivate_requires_grad(self.teacher_backbone)
         deactivate_requires_grad(self.teacher_head)
 
@@ -82,7 +75,16 @@ class DINO(pl.LightningModule):
         teacher_out = [self.forward_teacher(view) for view in global_views]
         student_out = [self.forward(view) for view in views]
         loss = self.criterion(teacher_out, student_out, epoch=self.current_epoch)
-        self.log("Loss", loss, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True, batch_size=batch_size)
+        self.log(
+            "Loss",
+            loss,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+            sync_dist=True,
+            batch_size=batch_size,
+        )
         # self.logger.log_metrics({"Loss": loss}, step=self.current_epoch)
         self.output = teacher_out[0]
 
@@ -101,7 +103,16 @@ class DINO(pl.LightningModule):
         w = 0.9
         self.avg_output_std = w * self.avg_output_std + (1 - w) * output_std.item()
         collapse_level = max(0.0, 1 - math.sqrt(8192) * self.avg_output_std)
-        self.log("Collapse Level", collapse_level, on_step=False, on_epoch=True, prog_bar=True, logger=True, sync_dist=True, batch_size=batch_size)
+        self.log(
+            "Collapse Level",
+            collapse_level,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+            sync_dist=True,
+            batch_size=batch_size,
+        )
 
     def on_after_backward(self):
         self.student_head.cancel_last_layer_gradients(current_epoch=self.current_epoch)
@@ -118,10 +129,10 @@ class DINO(pl.LightningModule):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="DINO training")
-    parser.add_argument('--model_name', type=str, default='resnet_18', help='Name of the model to use')
-    parser.add_argument('--input_dim', type=int, default=512, help='Input dimension of the model')
-    parser.add_argument('--devices', type=str, default="auto", help='Devices to use for training')
-    parser.add_argument('--data_dir', type=str, required=True, help='Folder of unlabeled images')
+    parser.add_argument("--model_name", type=str, default="resnet_18", help="Name of the model to use")
+    parser.add_argument("--input_dim", type=int, default=512, help="Input dimension of the model")
+    parser.add_argument("--devices", type=str, default="auto", help="Devices to use for training")
+    parser.add_argument("--data_dir", type=str, required=True, help="Folder of unlabeled images")
     args = parser.parse_args()
 
     num_workers = 12

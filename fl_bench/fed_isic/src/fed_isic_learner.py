@@ -12,9 +12,7 @@ from nvflare.apis.fl_constant import FLContextKey
 from nvflare.apis.fl_context import FLContext
 from nvflare.apis.shareable import ReturnCode, Shareable, make_reply
 from nvflare.app_common.abstract.learner_spec import Learner
-from nvflare.app_common.app_constant import (AlgorithmConstants,
-                                             AppConstants, ModelName,
-                                             ValidateType)
+from nvflare.app_common.app_constant import AlgorithmConstants, AppConstants, ModelName, ValidateType
 from prettytable import PrettyTable
 from torch.utils.tensorboard.writer import SummaryWriter
 
@@ -74,12 +72,12 @@ class FedISICLearner(Learner):
             client_idx=fl_ctx.get_identity_name(),
             central=self.central,
             batch_size=config_train["batch_size"],
-            seed=self.seed
+            seed=self.seed,
         )
 
         weights = [0] * 8
         for x in self.dm.train_dataset:
-            weights[int(x['label'])] += 1
+            weights[int(x["label"])] += 1
         N = len(self.dm.train_dataset)
         class_weights = []
         for i in range(8):
@@ -97,7 +95,7 @@ class FedISICLearner(Learner):
         self.best_model_path = "models/best_model.pt"
         self.last_model_path = "models/last.pt"
 
-        if self.method in ["fedavg", "fedprox", "fedopt", 'fedinit']:
+        if self.method in ["fedavg", "fedprox", "fedopt", "fedinit"]:
             self.trainer = BaseTrainer(config_train, self.method, self.class_weights)
         elif self.method == "scaffold":
             self.trainer = ScaffoldTrainer(config_train, self.method, self.class_weights)
@@ -115,7 +113,7 @@ class FedISICLearner(Learner):
         self.log_info(fl_ctx, f"Current/Total Round: {current_round + 1}/{num_rounds}")
         self.log_info(fl_ctx, f"Client identity: {fl_ctx.get_identity_name()}")
 
-        if self.method == 'scaffold':
+        if self.method == "scaffold":
             dxo_collection = from_shareable(data)
             if dxo_collection.data_kind != DataKind.COLLECTION:
                 self.log_error(
@@ -160,12 +158,12 @@ class FedISICLearner(Learner):
                     self.dm.train_dataloader,
                     num_steps=self.local_steps,
                     logger=self.writer,
-                    device=self.device
+                    device=self.device,
                 )
                 break
             except Exception as e:
                 if i < self.max_retry:
-                    self.log_warning(fl_ctx, f"Something wrong in training, retrying ({i+1}/{self.max_retry}).")
+                    self.log_warning(fl_ctx, f"Something wrong in training, retrying ({i + 1}/{self.max_retry}).")
                     # Restore trainer states to the beginning of the round
                     if os.path.exists(self.last_model_path):
                         self.trainer.load_checkpoint(self.last_model_path, self.model)
@@ -184,7 +182,7 @@ class FedISICLearner(Learner):
                 break
             except Exception as e:
                 if i < self.max_retry:
-                    self.log_warning(fl_ctx, f"Something wrong in val, retrying ({i+1}/{self.max_retry}).")
+                    self.log_warning(fl_ctx, f"Something wrong in val, retrying ({i + 1}/{self.max_retry}).")
                     # Reset dataset & dataloader
                     self.dm.teardown()
                     self.dm.setup()
@@ -221,7 +219,7 @@ class FedISICLearner(Learner):
             meta={MetaKey.NUM_STEPS_CURRENT_ROUND: self.local_steps},
         )
 
-        if self.method == 'scaffold':
+        if self.method == "scaffold":
             # Create a DXO collection with weights and scaffold controls
             dxo_weights_diff_ctrl = DXO(
                 data_kind=DataKind.WEIGHT_DIFF,
@@ -229,9 +227,9 @@ class FedISICLearner(Learner):
                 meta={MetaKey.NUM_STEPS_CURRENT_ROUND: self.local_steps},
             )
             collection_data = {
-                    AppConstants.MODEL_WEIGHTS: dxo,
-                    AlgorithmConstants.SCAFFOLD_CTRL_DIFF: dxo_weights_diff_ctrl,
-                }
+                AppConstants.MODEL_WEIGHTS: dxo,
+                AlgorithmConstants.SCAFFOLD_CTRL_DIFF: dxo_weights_diff_ctrl,
+            }
 
             dxo = DXO(data_kind=DataKind.COLLECTION, data=collection_data)
 
@@ -264,8 +262,8 @@ class FedISICLearner(Learner):
         if not dxo.data_kind == DataKind.WEIGHTS:
             self.log_exception(fl_ctx, f"DXO is of type {dxo.data_kind} but expected type WEIGHTS")
             return make_reply(ReturnCode.BAD_TASK_DATA)
-        
-        if self.method != "fedinit" :
+
+        if self.method != "fedinit":
             load_weights(self.model, dxo.data)
         else:
             beta = 0.1
@@ -273,19 +271,19 @@ class FedISICLearner(Learner):
             # only necessary when running fewer threads than clients
             # prev_model = copy.deepcopy(self.model)
             # prev_model.load_state_dict(torch.load(self.last_model_path)["model"])
-            local_var_dict = self.model.state_dict() #prev round dict
+            local_var_dict = self.model.state_dict()  # prev round dict
             model_keys = dxo.data.keys()
             for var_name in local_var_dict:
                 if var_name in model_keys:
                     wg = dxo.data[var_name]
                 try:
                     local_var_dict[var_name] = torch.as_tensor(
-                        (1 + beta) * torch.as_tensor(np.reshape(wg, local_var_dict[var_name].shape)) - 
-                        beta * local_var_dict[var_name].to('cpu')
+                        (1 + beta) * torch.as_tensor(np.reshape(wg, local_var_dict[var_name].shape))
+                        - beta * local_var_dict[var_name].to("cpu")
                     )
                 except Exception as e:
                     raise ValueError(f"Convert weight from {var_name} failed with error {str(e)}")
-                
+
             self.model.load_state_dict(local_var_dict)
 
         # 4. Run validation
@@ -296,7 +294,7 @@ class FedISICLearner(Learner):
                 break
             except Exception as e:
                 if i < self.max_retry:
-                    self.log_warning(fl_ctx, f"Error encountered in validation, retrying ({i+1}/{self.max_retry}).")
+                    self.log_warning(fl_ctx, f"Error encountered in validation, retrying ({i + 1}/{self.max_retry}).")
                     # Cleanup previous dataset & dataloader
                     self.dm.teardown()
                     self.dm.setup()
@@ -306,7 +304,7 @@ class FedISICLearner(Learner):
 
         self.log_info(
             fl_ctx,
-            f"Validation metrics of {model_owner}'s model on" f" {fl_ctx.get_identity_name()}'s data: {raw_metrics}",
+            f"Validation metrics of {model_owner}'s model on {fl_ctx.get_identity_name()}'s data: {raw_metrics}",
         )
 
         # For validation before training, only key metric is needed
@@ -335,7 +333,7 @@ class FedISICLearner(Learner):
             if model_data:
                 data = {}
                 for var_name in model_data["model"]:
-                    data[var_name] = model_data['model'][var_name].numpy()
+                    data[var_name] = model_data["model"][var_name].numpy()
                 dxo = DXO(data_kind=DataKind.WEIGHTS, data=data)
                 return dxo.to_shareable()
             else:

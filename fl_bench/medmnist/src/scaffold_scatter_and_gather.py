@@ -108,7 +108,6 @@ class ScatterAndGatherScaffold(ScatterAndGather):
 
     def control_flow(self, abort_signal: Signal, fl_ctx: FLContext) -> None:
         try:
-
             self.log_info(fl_ctx, "Beginning ScatterAndGatherScaffold training phase.")
             self._phase = AppConstants.PHASE_TRAIN
 
