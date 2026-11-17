@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en" data-type="software" data-radius="soft" data-ground="sand" data-buttons="tonal" data-motion>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ARIA: architecture, initialization and aggregation for federated medical image classification</title>
+<meta name="description" content="ARIA trains 9 architectures from 3 starting weights with 3 aggregation methods on 3 medical image sets, and finds the three choices work only as a set. IEEE ISBI 2024, with code.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ARIA: architecture, initialization and aggregation in federated learning">
+<meta property="og:description" content="243 federated runs on skin lesions and abdominal CT. IEEE ISBI 2024, with code.">
+<meta property="og:image" content="https://siomvas.github.io/ARIA/share.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#ffffff">
+<link rel="canonical" href="https://siomvas.github.io/ARIA/">
+<meta name="site-kind" content="software">
+<meta name="page-type" content="software">
+<meta name="citation_title" content="ARIA: On the Interaction Between Architectures, Initialization and Aggregation Methods for Federated Visual Classification">
+<meta name="citation_author" content="Siomos, Vasilis">
+<meta name="citation_author" content="Naval-Marimont, Sergio">
+<meta name="citation_author" content="Passerat-Palmbach, Jonathan">
+<meta name="citation_author" content="Tarroni, Giacomo">
+<meta name="citation_publication_date" content="2024">
+<meta name="citation_conference_title" content="2024 IEEE International Symposium on Biomedical Imaging (ISBI)">
+<meta name="citation_doi" content="10.1109/ISBI56570.2024.10635565">
+<meta name="citation_pdf_url" content="https://arxiv.org/pdf/2311.14625">
+<meta name="citation_arxiv_id" content="2311.14625">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"ScholarlyArticle","headline":"ARIA: On the Interaction Between Architectures, Initialization and Aggregation Methods for Federated Visual Classification","author":[{"@type":"Person","name":"Vasilis Siomos","url":"https://vsiomos.me"},{"@type":"Person","name":"Sergio Naval-Marimont"},{"@type":"Person","name":"Jonathan Passerat-Palmbach"},{"@type":"Person","name":"Giacomo Tarroni"}],"datePublished":"2024","isPartOf":"IEEE International Symposium on Biomedical Imaging (ISBI) 2024","identifier":"https://doi.org/10.1109/ISBI56570.2024.10635565","sameAs":["https://arxiv.org/abs/2311.14625","https://doi.org/10.1109/ISBI56570.2024.10635565"],"codeRepository":"https://github.com/siomvas/ARIA"}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400..700&family=JetBrains+Mono:wght@400..500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/system.css">
+<link rel="stylesheet" href="assets/ui/cards.css">
+<link rel="stylesheet" href="assets/motion/motion.css">
+<link rel="stylesheet" href="assets/backgrounds/backgrounds.css">
+<link rel="stylesheet" href="assets/layout/layout.css">
+<link rel="stylesheet" href="assets/icons/icon.css">
+<style>
+:root {
+  --p-bg: #ffffff; --p-surface: #f4f4f4; --p-ink: #111111; --p-muted: #6b6b6b;
+  --p-accent: #1a4be0; --p-accent-ink: #ffffff; --p-action: #1a4be0; --p-action-ink: #ffffff;
+  --p-inv-bg: #111111; --p-inv-surface: #1e1e1e; --p-inv-ink: #ffffff; --p-inv-muted: #9a9a9a;
+  --p-inv-accent: #ffffff; --p-inv-accent-ink: #111111; --p-inv-action: #ffffff; --p-inv-action-ink: #111111;
+  --font-display: "Onest", system-ui, sans-serif;
+  --font-text: "Onest", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --display-weight: 400;
+  --display-tracking: -0.035em;
+  --display-tracking-xl: -0.04em;
+}
+</style>
+<link rel="stylesheet" href="assets/ui/base.css">
+<link rel="stylesheet" href="assets/ui/window/fragment.css">
+<script>document.documentElement.classList.add('m-enter');setTimeout(()=>document.documentElement.classList.add('m-enter-done'),700)</script>
+<script src="assets/backgrounds/backgrounds.js"></script>
+<script>document.documentElement.classList.add('mo-js');setTimeout(()=>document.documentElement.classList.add('mo-safe'),2500)</script>
+<link rel="modulepreload" href="assets/moments/moments.js">
+<link rel="modulepreload" href="assets/moments/lib.js">
+<link rel="modulepreload" href="assets/moments/word-highlight/moment.js">
+<link rel="modulepreload" href="assets/moments/line-carries-colour/moment.js">
+<style>
+  /* the hero's collage: one set a dataset, each a mini table of its 81 runs, its best run and one more piece */
+  .ly-collage .ly-piece { box-shadow: 0 1px 2px rgba(17, 17, 17, .06), 0 8px 24px rgba(17, 17, 17, .06); }
+  .ar-card { background: #fff; color: #111; padding: 14px 16px 16px; display: grid; gap: 10px; align-content: start; }
+  .ar-card__k { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: #555; }
+  .ar-card__k b { font-weight: 500; color: #111; }
+  .ar-mini { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .ar-mini__g { font-size: 11.5px; color: #555; }
+  .ar-mini__cells { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 2px; }
+  .ar-mini__cells i:nth-child(9n + 4), .ar-mini__cells i:nth-child(9n + 7) { margin-left: 4px; }
+  .ar-mini__cells i { display: block; aspect-ratio: 2 / 1; border-radius: 2px; }
+  .ar-mini__cells i.is-best { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px #111; position: relative; z-index: 1; }
+  .ar-best { background: #fff; color: #111; padding: 16px 18px; display: grid; align-content: space-between; gap: 6px; }
+  .ar-best__k { font-size: 13px; color: #555; }
+  .ar-best__v { font: 400 30px/1 var(--font-display); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .ar-best__v small { font: 400 14px/1.3 var(--font-text); letter-spacing: 0; color: #555; margin-left: 6px; }
+  .ar-best__w { font-size: 15px; font-weight: 500; }
+  .ar-inits { background: #fff; color: #111; padding: 14px 16px; display: grid; gap: 8px; align-content: start; }
+  .ar-inits__r { display: grid; grid-template-columns: 76px minmax(0, 1fr) 48px; align-items: center; gap: 10px; font-size: 13px; }
+  .ar-inits__r span:last-child { font-family: var(--font-mono); font-size: 12.5px; text-align: right; font-variant-numeric: tabular-nums; }
+  .ar-inits__bar { height: 10px; border-radius: 99px; background: #eef1fb; overflow: hidden; }
+  .ar-inits__bar i { display: block; height: 100%; width: var(--w); background: var(--p-accent); border-radius: inherit; }
+  .hero__lead { color: color-mix(in oklab, var(--ink) 86%, var(--bg)); }
+  @media (max-width: 639px) {
+    .ly-collage .ar-photo { display: none; }
+    .ly-collage .ar-p1 { left: 4% !important; top: 4% !important; width: 92% !important; }
+    .ly-collage .ar-p3 { left: 4% !important; top: auto !important; bottom: 4%; width: 92% !important; height: auto !important; }
+  }
+  @media (max-width: 639px) {
+    .ar-card { padding: 10px 10px 12px; gap: 6px; }
+    .ar-card__k, .ar-mini__g { font-size: 11px; }
+    .ar-best { padding: 10px 12px; }
+    .ar-best__v { font-size: 24px; }
+    .ar-best__v small, .ar-best__k { font-size: 11px; }
+    .ar-best__w { font-size: 12.5px; }
+  }
+
+  /* the results explorer: 81 runs a dataset, one row an architecture */
+  .app.ui { display: grid; grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); margin-top: var(--s-7); background: var(--u-bg); border: 1px solid var(--u-border); border-radius: var(--u-r); box-shadow: var(--u-shadow); }
+  .app > .app__pane { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+  .app > .app__pane + .app__pane { border-left: 1px solid var(--u-line); }
+  .app > .app__pane > .ui-panel { width: 100%; height: 100%; border: 0; border-radius: 0; box-shadow: none; }
+  .ar-tabs { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--u-fill-2); }
+  .ar-tabs button { min-height: 28px; padding: 0 12px; border: 0; border-radius: 8px; background: transparent; color: var(--u-text-2); font: 500 13px/1 var(--font-text); cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; white-space: nowrap; }
+  .ar-tabs button[aria-pressed="true"] { background: var(--u-bg); color: var(--u-ink); box-shadow: 0 1px 2px rgba(17, 17, 17, .12); }
+  .ar-grid { display: grid; grid-template-columns: 148px repeat(9, minmax(0, 1fr)); gap: 3px; padding: 14px 18px 18px; }
+  .ar-grid__g { grid-row: 1; font-size: 12px; color: var(--u-text-2); padding-bottom: 2px; border-bottom: 1px solid var(--u-line); }
+  .ar-grid__a { grid-row: 2; font-size: 11.5px; color: var(--u-text-2); text-align: left; padding: 4px 0 2px 6px; }
+  .ar-grid__r { display: flex; flex-direction: column; justify-content: center; min-width: 0; padding-right: 8px; font-size: 13px; color: var(--u-ink); }
+  .ar-grid__r small { font-size: 11.5px; color: var(--u-text-2); }
+  .ar-cell { position: relative; height: 44px; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--c-ink, #111); font: 500 12px/1 var(--font-mono); font-variant-numeric: tabular-nums; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  .ar-grid { position: relative; }
+  .ar-grid > svg.ar-grid__bg { position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none; }
+  .ar-cell { z-index: 1; }
+  .ar-cell > span { position: relative; }
+  .ar-cell.is-best::after { z-index: 1; }
+  .ar-cell:nth-of-type(n) { margin: 0; }
+  .ar-cell.is-g { margin-left: 6px; }
+  .ar-cell[aria-selected="true"] { box-shadow: 0 0 0 2px var(--u-bg), 0 0 0 4px var(--u-ink); z-index: 1; }
+  .ar-cell.is-best::after { content: ""; position: absolute; top: 4px; right: 4px; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .ar-cell:focus-visible { outline: 2px solid var(--u-ink); outline-offset: 2px; }
+  .ar-open { padding: 20px 22px 22px; display: grid; gap: 18px; align-content: start; }
+  .ar-open__v { font: 400 44px/1 var(--font-display); letter-spacing: -0.03em; color: var(--u-ink); font-variant-numeric: tabular-nums; }
+  .ar-open__m { margin-top: 6px; font-size: 13px; color: var(--u-text-2); }
+  .ar-open dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 16px; margin: 0; font-size: 14px; }
+  .ar-open dt { color: var(--u-text-2); }
+  .ar-open dd { margin: 0; color: var(--u-ink); }
+  .ar-scale { display: grid; gap: 6px; font-size: 12px; color: var(--u-text-2); }
+  .ar-scale i { display: block; height: 10px; border-radius: 99px; background: linear-gradient(90deg, #eef2fd, #b3c4f6 50%, #5f84ec); }
+  .ar-bars svg { display: block; width: 100%; height: auto; }
+  .ar-bars text { font-family: var(--font-text); }
+  .ar-itabs { display: none; }
+  .ar-scale div { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
+  @media (max-width: 1279px) { .ar-grid { grid-template-columns: 112px repeat(9, minmax(0, 1fr)); } .ar-grid__r small { display: none; } .ar-cell { font-size: 10.5px; } }
+  @media (max-width: 1023px) { .app.ui { grid-template-columns: minmax(0, 1fr); } .app > .app__pane + .app__pane { border-left: 0; border-top: 1px solid var(--u-line); } }
+  @media (max-width: 639px) {
+    .ar-tabs button { min-height: 44px; padding: 0 9px; font-size: 12.5px; }
+    .ar-grid { grid-template-columns: 116px repeat(3, minmax(0, 1fr)); gap: 3px; padding: 10px 12px 14px; }
+    .ar-grid__r { font-size: 12.5px; padding-right: 6px; }
+    .ar-grid__a { font-size: 11px; }
+    .ar-cell { height: 44px; font-size: 12px; }
+    .ar-cell.is-g { margin-left: 0; }
+    .ar-itabs { display: flex; grid-column: 2 / span 3; grid-row: 1; padding: 3px; border-radius: 10px; background: var(--u-fill-2); }
+    .ar-itabs button { flex: 1 1 0; min-height: 44px; border: 0; border-radius: 8px; background: transparent; color: var(--u-text-2); font: 500 12.5px/1 var(--font-text); }
+    .ar-itabs button[aria-pressed="true"] { background: var(--u-bg); color: var(--u-ink); box-shadow: 0 1px 2px rgba(17, 17, 17, .12); }
+    .ar-open { padding: 16px 16px 18px; }
+    .ar-open__v { font-size: 28px; }
+    .ar-open .ar-scale, .ar-open dl { display: none; }
+    .ar-open { gap: 12px; padding: 14px 14px 16px; }
+  }
+  main .grid p.muted, .ar-sub { color: color-mix(in oklab, var(--ink) 86%, var(--bg)); }
+  .stack-7 > * + * { margin-top: var(--s-7); }
+
+  /* the findings: one statement, then three findings under it */
+  .ar-statement h2 { font-size: clamp(34px, 3.9vw, 58px); line-height: 1.1; letter-spacing: var(--display-tracking); max-width: 26ch; }
+  .ar-find h3 { font: 500 20px/1.3 var(--font-display); letter-spacing: -0.01em; margin: 0 0 var(--s-3); }
+  .ar-find p { margin: 0; line-height: 1.55; color: color-mix(in oklab, var(--ink) 86%, var(--bg)); }
+  @media (max-width: 767px) { .ar-finds { row-gap: var(--s-6); } }
+
+  /* the study design on the lit band */
+  .ar-col h3 { font: 500 20px/1.3 var(--font-display); letter-spacing: -0.01em; margin: 0 0 var(--s-4); }
+  .ar-list { list-style: none; margin: 0; padding: 0; }
+  .ar-list li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 14.5px; }
+  @media (max-width: 639px) {
+    #method .ar-sub { display: none; }
+    .ar-thumbs { display: none; }
+    .ar-list li { padding: 4px 0; }
+    .ar-col h3 { margin-bottom: var(--s-3); }
+    .ar-item + .ar-item { margin-top: var(--s-3); }
+  }
+  .ar-list li span:last-child { color: color-mix(in oklab, var(--ink) 80%, var(--bg)); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ar-item + .ar-item { margin-top: var(--s-4); }
+  .ar-item h4 { font: 500 16px/1.4 var(--font-text); margin: 0 0 4px; }
+  .ar-item p { margin: 0; font-size: 15px; line-height: 1.5; color: color-mix(in oklab, var(--ink) 86%, var(--bg)); }
+  .ar-thumbs { display: flex; gap: 10px; margin-top: 10px; }
+  .ar-thumbs img { width: 64px; height: 64px; border-radius: var(--r-sm); object-fit: cover; }
+
+  /* the questions and the citation window */
+  .faq > .faq__item, .ar-bib { min-width: 0; }
+  .ar-cite > h3 { font: 500 var(--t-lead)/1.4 var(--font-text); letter-spacing: 0; margin: 0 0 var(--s-4); }
+  .ar-bib pre { margin: 0; padding: 14px 18px 16px; font: 400 12.5px/1.55 var(--font-mono); color: var(--u-ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .ar-copy { min-height: 32px; padding: 0 12px; border: 1px solid var(--u-line-2); border-radius: 8px; background: var(--u-bg); color: var(--u-ink); font: 500 13px/1 var(--font-text); cursor: pointer; touch-action: manipulation; }
+  @media (max-width: 639px) { .ar-copy { min-height: 44px; } .ar-bib pre { font-size: 11.5px; padding: 12px 14px 14px; } }
+
+  .menu-card .panel { --p-h: 160px; background: #fff; }
+  .close__word { line-height: 1.04; }
+  .menu-card .panel img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
+  main [id]:not(section) { scroll-margin-top: calc(var(--nav) + 24px); }
+</style>
+</head>
+<body>
+<!-- type: software (site-kind software): a federated learning benchmark of architectures, initializations and aggregation methods on medical images, its paper and code
+     deal: hero triptych (centred dealt first: FDS has it, dealt again), nav nav-mega, close close-word, footer footer-columns,
+           rhythm surface-pairs (#results), buttons tonal, mark arc (dots dealt first: FDS has it), palette white-link-blue,
+           type onest, ground sand, effect grain-gradient (the collage), grounds bg-mist (hero), bg-band (method)
+     moments: word-highlight (#findings), line-carries-colour (#method)
+     screens: hero 1, results 1, findings 1, method 1, questions 1, closing 1 -->
+<header class="nav">
+  <div class="wrap nav__bar">
+    <a class="skip-link" href="#top">Skip to content</a>
+    <a class="nav__logo" href="#top"><span class="mark" data-mark="arc" aria-hidden="true"></span>ARIA</a>
+    <nav class="nav__links" aria-label="Main">
+      <div class="nav__item">
+        <a class="nav__link" href="#results">Results <svg class="chev" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <div class="nav__menu">
+          <div class="wrap grid">
+            <div class="menu-col span-3">
+              <p class="t-label">Datasets</p>
+              <a href="?data=fedisic#results">Fed-ISIC<span>Skin lesions, 6 clients</span></a>
+              <a href="?data=organ01#results">OrganAMNIST, α&nbsp;=&nbsp;0.1<span>Abdominal CT, 4 skewed clients</span></a>
+              <a href="?data=organ100#results">OrganAMNIST, α&nbsp;=&nbsp;100<span>Abdominal CT, 4 even clients</span></a>
+            </div>
+            <div class="menu-col span-3">
+              <p class="t-label">Read on</p>
+              <a href="#findings">Findings<span>What held across the runs</span></a>
+              <a href="#method">Study design<span>Nine models, three starts, three aggregators</span></a>
+              <a href="#cite">Citation<span>BibTeX for the paper</span></a>
+            </div>
+            <a class="menu-card span-4 start-9" href="#method"><div class="panel"><img src="assets/img/card-aria.png" alt="" width="820" height="461" loading="lazy" decoding="async"></div><span>The four image sets of the study</span></a>
+          </div>
+        </div>
+      </div>
+      <div class="nav__item"><a class="nav__link" href="#findings">Findings</a></div>
+      <div class="nav__item"><a class="nav__link" href="#method">Study</a></div>
+      <div class="nav__item"><a class="nav__link" href="#questions">Questions</a></div>
+    </nav>
+    <div class="nav__actions">
+      <a class="nav__link" href="https://github.com/siomvas/ARIA">Code</a>
+      <a class="btn btn--primary" href="https://arxiv.org/pdf/2311.14625">Read the paper</a>
+    </div>
+    <button class="nav__toggle" type="button" aria-expanded="false" aria-label="Menu">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 5h14M2 13h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero hero--triptych bg-mist" data-enter aria-labelledby="hero-h">
+    <div class="wrap"><div class="hero-text grid hero__grid">
+      <div class="span-3">
+        <h1 id="hero-h">81 federated runs per dataset</h1>
+        <p class="hero__lead">Nine architectures, three starting weights and three aggregation methods, trained on three medical image sets. IEEE ISBI 2024.</p>
+      </div>
+      <div class="ly-collage span-6 start-4" data-fx="grain-gradient" data-fx-seed="19" role="img" aria-label="The 81 federated runs on each dataset as a grid of shades. The best run on Fed-ISIC is ConvNeXt-S from ImageNet weights with FedAvg, 75.08 balanced accuracy; on OrganAMNIST with α = 0.1, ViT-B/16 from ImageNet with SCAFFOLD, 96.01 accuracy; with α = 100, DenseNet-121 from ImageNet with FedOpt, 97.00 accuracy.">
+        <div class="ly-collage__set is-on">
+          <div class="ly-piece ar-card ar-p1" style="left: 4%; top: 5%; width: 70%">
+            <div class="ar-card__k"><b>Fed-ISIC, 81 runs</b><span>Table 1</span></div>
+            <div class="ar-mini"><span class="ar-mini__g">Random</span><span class="ar-mini__g">ImageNet</span><span class="ar-mini__g">DINO</span></div>
+            <div class="ar-mini__cells"><i style="background:#c5d2f6"></i><i style="background:#d8e1f9"></i><i style="background:#c0cef6"></i><i style="background:#4d76e8"></i><i style="background:#3e6ae5"></i><i style="background:#3964de"></i><i style="background:#4671e7"></i><i style="background:#6f90ec"></i><i style="background:#446ee7"></i><i style="background:#a6b9f3"></i><i style="background:#a3b8f3"></i><i style="background:#8aa4f0"></i><i style="background:#2951cb"></i><i style="background:#3863de"></i><i style="background:#2b53cd"></i><i style="background:#3d68e3"></i><i style="background:#3c68e3"></i><i style="background:#325bd6"></i><i style="background:#cfdaf8"></i><i style="background:#d7e0f9"></i><i style="background:#d2ddf8"></i><i style="background:#3c67e2"></i><i style="background:#4a74e8"></i><i style="background:#3a65df"></i><i style="background:#547be9"></i><i style="background:#4872e7"></i><i style="background:#4972e7"></i><i style="background:#c9d5f7"></i><i style="background:#cbd6f7"></i><i style="background:#c7d4f7"></i><i style="background:#345fd9"></i><i style="background:#3d69e4"></i><i style="background:#315ad4"></i><i style="background:#5078e8"></i><i style="background:#5d82ea"></i><i style="background:#4670e7"></i><i style="background:#cdd9f8"></i><i style="background:#dbe3fa"></i><i style="background:#bdccf5"></i><i style="background:#3f6be6"></i><i style="background:#3c67e2"></i><i style="background:#3964df"></i><i style="background:#4973e7"></i><i style="background:#567de9"></i><i style="background:#3f6be6"></i><i style="background:#dce4fa"></i><i style="background:#e2e9fb"></i><i style="background:#dfe6fa"></i><i style="background:#2d55cf"></i><i style="background:#2a52cb"></i><i style="background:#234ac4"></i><i style="background:#2850ca"></i><i style="background:#2c54ce"></i><i style="background:#2046c0"></i><i style="background:#d8e1f9"></i><i style="background:#d8e1f9"></i><i style="background:#d5dff9"></i><i style="background:#325cd6"></i><i style="background:#2b53cd"></i><i style="background:#234ac3"></i><i style="background:#96adf1"></i><i style="background:#89a3f0"></i><i style="background:#567ce9"></i><i style="background:#d4ddf9"></i><i style="background:#cdd8f8"></i><i style="background:#d1dcf8"></i><i style="background:#4d76e8"></i><i style="background:#547be9"></i><i style="background:#3b67e2"></i><i style="background:#2d56d0"></i><i style="background:#2b53cd"></i><i style="background:#355fd9"></i><i style="background:#d3ddf8"></i><i style="background:#ccd7f7"></i><i style="background:#d1dbf8"></i><i class="is-best" style="background:#1a3fb8"></i><i style="background:#2249c2"></i><i style="background:#1e44bd"></i><i style="background:#2850ca"></i><i style="background:#2148c1"></i><i style="background:#1c42bb"></i></div>
+          </div>
+          <div class="ly-piece ar-photo" style="left: 62%; top: 40%; width: 34%; height: 30%"><img src="assets/img/fed-isic.png" alt="" width="200" height="200" style="object-position: 50% 50%"></div>
+          <div class="ly-piece ar-best ar-p3" style="left: 30%; top: 74%; width: 66%; height: 22%">
+            <span class="ar-best__k">Best of the 81 runs</span>
+            <span class="ar-best__w">ConvNeXt-S, ImageNet, FedAvg</span>
+            <span class="ar-best__v">75.08<small>balanced accuracy</small></span>
+          </div>
+        </div>
+        <div class="ly-collage__set" aria-hidden="true">
+          <div class="ly-piece" style="left: 4%; top: 5%; width: 34%; height: 30%"><img src="assets/img/organamnist.png" alt="" width="200" height="200" style="object-position: 50% 50%"></div>
+          <div class="ly-piece ar-best" style="left: 44%; top: 8%; width: 52%; height: 22%">
+            <span class="ar-best__k">Best of the 81 runs</span>
+            <span class="ar-best__w">ViT-B/16, ImageNet, SCAFFOLD</span>
+            <span class="ar-best__v">96.01<small>accuracy</small></span>
+          </div>
+          <div class="ly-piece ar-card" style="left: 26%; top: 56%; width: 70%">
+            <div class="ar-card__k"><b>OrganAMNIST, α&nbsp;=&nbsp;0.1</b><span>Table 2</span></div>
+            <div class="ar-mini"><span class="ar-mini__g">Random</span><span class="ar-mini__g">ImageNet</span><span class="ar-mini__g">DINO</span></div>
+            <div class="ar-mini__cells"><i style="background:#335dd7"></i><i style="background:#2c55cf"></i><i style="background:#325cd6"></i><i style="background:#2147c1"></i><i style="background:#1e44bd"></i><i style="background:#2046bf"></i><i style="background:#4d75e8"></i><i style="background:#3661db"></i><i style="background:#446fe7"></i><i style="background:#9cb2f2"></i><i style="background:#6e8fec"></i><i style="background:#90a9f1"></i><i style="background:#2046bf"></i><i style="background:#1d42bb"></i><i style="background:#1d42bc"></i><i style="background:#4570e7"></i><i style="background:#3661db"></i><i style="background:#3a65e0"></i><i style="background:#4e76e8"></i><i style="background:#3b66e1"></i><i style="background:#436ee7"></i><i style="background:#2850ca"></i><i style="background:#254cc5"></i><i style="background:#274ec8"></i><i style="background:#5c81ea"></i><i style="background:#3e6ae5"></i><i style="background:#5b80ea"></i><i style="background:#4670e7"></i><i style="background:#3f6ae5"></i><i style="background:#4b74e8"></i><i style="background:#2d56d0"></i><i style="background:#2951cb"></i><i style="background:#2e56d0"></i><i style="background:#6689eb"></i><i style="background:#426de6"></i><i style="background:#7a98ee"></i><i style="background:#3d69e4"></i><i style="background:#325cd6"></i><i style="background:#426de6"></i><i style="background:#1f44be"></i><i style="background:#1d43bc"></i><i style="background:#1f45be"></i><i style="background:#406ce6"></i><i style="background:#325bd6"></i><i style="background:#436ee6"></i><i style="background:#5078e8"></i><i style="background:#416ce6"></i><i style="background:#4f77e8"></i><i style="background:#1b41ba"></i><i style="background:#1b40b9"></i><i style="background:#1b40b9"></i><i style="background:#4e76e8"></i><i style="background:#3c67e2"></i><i style="background:#446ee7"></i><i style="background:#335dd7"></i><i style="background:#2a52cc"></i><i style="background:#325bd6"></i><i style="background:#2147c1"></i><i style="background:#2046c0"></i><i style="background:#234ac3"></i><i style="background:#cdd8f7"></i><i style="background:#b2c3f4"></i><i style="background:#dbe3fa"></i><i style="background:#4f77e8"></i><i style="background:#4d75e8"></i><i style="background:#4a74e8"></i><i style="background:#1c42bb"></i><i style="background:#1a3fb8"></i><i class="is-best" style="background:#1a3fb8"></i><i style="background:#5c81ea"></i><i style="background:#4b74e8"></i><i style="background:#587ee9"></i><i style="background:#e2e9fb"></i><i style="background:#dbe4fa"></i><i style="background:#dee5fa"></i><i style="background:#2147c0"></i><i style="background:#1e44bd"></i><i style="background:#1e44bd"></i><i style="background:#3863de"></i><i style="background:#3059d4"></i><i style="background:#3762dc"></i></div>
+          </div>
+        </div>
+        <div class="ly-collage__set" aria-hidden="true">
+          <div class="ly-piece ar-card" style="left: 26%; top: 5%; width: 70%">
+            <div class="ar-card__k"><b>OrganAMNIST, α&nbsp;=&nbsp;100</b><span>Table 3</span></div>
+            <div class="ar-mini"><span class="ar-mini__g">Random</span><span class="ar-mini__g">ImageNet</span><span class="ar-mini__g">DINO</span></div>
+            <div class="ar-mini__cells"><i style="background:#345dd8"></i><i style="background:#3059d3"></i><i style="background:#325cd6"></i><i style="background:#2248c1"></i><i style="background:#1f45be"></i><i style="background:#2249c2"></i><i style="background:#446fe7"></i><i style="background:#3661db"></i><i style="background:#436ee6"></i><i style="background:#b5c6f4"></i><i style="background:#84a0ef"></i><i style="background:#b4c4f4"></i><i style="background:#264dc7"></i><i style="background:#254cc6"></i><i style="background:#254cc6"></i><i style="background:#446fe7"></i><i style="background:#3c67e2"></i><i style="background:#446ee7"></i><i style="background:#3761dc"></i><i style="background:#325cd6"></i><i style="background:#3660da"></i><i style="background:#2a52cc"></i><i style="background:#264dc6"></i><i style="background:#274fc8"></i><i style="background:#3c67e2"></i><i style="background:#3660db"></i><i style="background:#3c68e3"></i><i style="background:#345ed8"></i><i style="background:#325cd6"></i><i style="background:#345ed9"></i><i style="background:#2c55cf"></i><i style="background:#274ec8"></i><i style="background:#2c54ce"></i><i style="background:#416de6"></i><i style="background:#3964df"></i><i style="background:#3e6ae5"></i><i style="background:#325cd6"></i><i style="background:#3059d3"></i><i style="background:#355fd9"></i><i style="background:#1e43bd"></i><i class="is-best" style="background:#1a3fb8"></i><i style="background:#1d42bb"></i><i style="background:#3761dc"></i><i style="background:#315ad5"></i><i style="background:#3761dc"></i><i style="background:#5b80ea"></i><i style="background:#577de9"></i><i style="background:#6185eb"></i><i style="background:#1d43bc"></i><i style="background:#1b41ba"></i><i style="background:#1d43bc"></i><i style="background:#6b8cec"></i><i style="background:#577ee9"></i><i style="background:#6b8cec"></i><i style="background:#2b54cd"></i><i style="background:#2951cb"></i><i style="background:#2a52cc"></i><i style="background:#2046c0"></i><i style="background:#1e44bd"></i><i style="background:#2046bf"></i><i style="background:#7392ed"></i><i style="background:#456fe7"></i><i style="background:#7594ed"></i><i style="background:#9bb1f2"></i><i style="background:#9cb2f2"></i><i style="background:#99b0f2"></i><i style="background:#2147c1"></i><i style="background:#2046bf"></i><i style="background:#2046bf"></i><i style="background:#97aef1"></i><i style="background:#8ca5f0"></i><i style="background:#94acf1"></i><i style="background:#b2c3f4"></i><i style="background:#90a8f1"></i><i style="background:#e2e9fb"></i><i style="background:#2046bf"></i><i style="background:#2046c0"></i><i style="background:#2147c0"></i><i style="background:#436ee6"></i><i style="background:#3b66e1"></i><i style="background:#416de6"></i></div>
+          </div>
+          <div class="ly-piece ar-inits" style="left: 4%; top: 52%; width: 46%">
+            <div class="ar-card__k"><b>Mean of 27 runs a start</b></div>
+            <div class="ar-inits__r"><span>Random</span><span class="ar-inits__bar"><i style="--w: 40.2%"></i></span><span>89.83</span></div>
+            <div class="ar-inits__r"><span>ImageNet</span><span class="ar-inits__bar"><i style="--w: 92.1%"></i></span><span>96.05</span></div>
+            <div class="ar-inits__r"><span>DINO</span><span class="ar-inits__bar"><i style="--w: 53.8%"></i></span><span>91.45</span></div>
+          </div>
+          <div class="ly-piece ar-best" style="left: 54%; top: 74%; width: 42%; height: 22%">
+            <span class="ar-best__k">Best of the 81 runs</span>
+            <span class="ar-best__w">DenseNet-121, ImageNet, FedOpt</span>
+            <span class="ar-best__v">97.00<small>accuracy</small></span>
+          </div>
+        </div>
+      </div>
+      <div class="span-3 start-10 hero__cta"><a class="btn btn--primary" href="https://arxiv.org/pdf/2311.14625">Read the paper</a></div>
+    </div></div>
+  </section>
+
+  <section class="section ground-surface" id="results" aria-labelledby="results-h">
+    <div class="wrap">
+      <div class="grid">
+        <h2 class="span-5" id="results-h">Results for all 243 runs</h2>
+        <div class="span-6 start-7 stack-4">
+          <p class="ar-sub">Balanced accuracy on Fed-ISIC and accuracy on OrganAMNIST, from Tables 1 to 3. Rows run from the fastest architecture to the slowest. Pick a run to read it.</p>
+          <a class="link" href="https://arxiv.org/pdf/2311.14625">See the tables in the paper</a>
+        </div>
+      </div>
+      <p class="sr-only" id="ar-status" role="status" aria-live="polite"></p>
+      <div class="ui app" role="group" aria-label="Results explorer">
+        <div class="app__pane app__pane--list">
+          <div class="ui-panel">
+            <div class="ui-win__bar"><span class="ui-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="ui-spacer"></span>
+              <div class="ar-tabs" role="group" aria-label="Dataset"><button type="button" data-set="fedisic" aria-pressed="true">Fed-ISIC</button><button type="button" data-set="organ01" aria-pressed="false">α&nbsp;=&nbsp;0.1</button><button type="button" data-set="organ100" aria-pressed="false">α&nbsp;=&nbsp;100</button></div>
+            </div>
+            <div class="ar-grid" id="ar-grid" role="grid" aria-label="Runs by architecture, starting weights and aggregation method"></div>
+          </div>
+        </div>
+        <div class="app__pane app__pane--open">
+          <div class="ui-panel">
+            <div class="ui-head"><span class="ui-title" id="ar-title">ConvNeXt-S, ImageNet, FedAvg</span></div>
+            <div class="ar-open" id="ar-open"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section statement" id="findings" aria-labelledby="findings-h">
+    <div class="wrap stack-7">
+      <div class="section-head ar-statement" data-moment="word-highlight">
+        <h2 id="findings-h" class="mo-wh__text">Changing the architecture moved federated results more than changing the aggregation method, and the best run on Fed-ISIC still uses <strong>FedAvg</strong>.</h2>
+      </div>
+      <div class="grid ar-finds">
+        <div class="span-4 ar-find"><h3>ImageNet weights won 25 of 27 times</h3><p>For each architecture and dataset, the best ImageNet run beat the best random and self-supervised runs, except the two transformers on Fed-ISIC.</p></div>
+        <div class="span-4 ar-find"><h3>Federated ResNets do not scale</h3><p>Depth and width helped central training but not federated training: ResNet-18 came out ahead of ResNet-50 and WRN-50-2 in most settings.</p></div>
+        <div class="span-4 ar-find"><h3>Federated transformers need pre-training</h3><p>From random weights, ViT-B/16 and Swin-T did poorly. From ImageNet they came close to the CNNs, and DINO on skin images lifted both past their ImageNet runs on Fed-ISIC.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section bg-band" id="method" aria-labelledby="method-h" data-moment="line-carries-colour" data-moment-opts='{"from": "base"}'>
+    <div class="wrap stack-7">
+      <div class="grid grid--top">
+        <h2 class="span-5" id="method-h">Three choices in every federated run</h2>
+        <p class="span-6 start-7 ar-sub">Clients share one set of hyper-parameters, with no tuning per client or per aggregation method. Fed-ISIC trains for 20 rounds, and every result averages two seeds.</p>
+      </div>
+      <div class="grid grid--top">
+        <div class="span-4 ar-col">
+          <h3>9 architectures</h3>
+          <ul class="ar-list" translate="no">
+            <li><span>ResNet-18</span><span>11.7M, BN</span></li>
+            <li><span>NF-ResNet-50</span><span>25.6M, SWS</span></li>
+            <li><span>ResNet-50</span><span>25.6M, BN</span></li>
+            <li><span>WRN-50-2</span><span>68.9M, BN</span></li>
+            <li><span>DenseNet-121</span><span>8M, BN</span></li>
+            <li><span>Swin-T</span><span>28.3M, LN</span></li>
+            <li><span>EfficientNetV2-S</span><span>21.5M, BN</span></li>
+            <li><span>ViT-B/16</span><span>86.6M, LN</span></li>
+            <li><span>ConvNeXt-S</span><span>50.2M, LN</span></li>
+          </ul>
+        </div>
+        <div class="span-4 ar-col">
+          <h3>3 starting weights</h3>
+          <div class="ar-item"><h4>Random</h4><p>No pre-training, the case for images that do not fit ImageNet’s 224 by 224 RGB.</p></div>
+          <div class="ar-item"><h4>ImageNet</h4><p>The standard supervised weights of each architecture.</p></div>
+          <div class="ar-item"><h4>DINO, self-supervised</h4><p>Pre-trained on Skin-SSL for Fed-ISIC and on Abdomen-SSL for OrganAMNIST.</p>
+            <div class="ar-thumbs"><img src="assets/img/skin-ssl.png" alt="A skin lesion from Skin-SSL" width="200" height="200" loading="lazy" decoding="async"><img src="assets/img/abdomen-ssl.png" alt="An abdominal CT slice from Abdomen-SSL" width="200" height="200" loading="lazy" decoding="async"></div>
+          </div>
+        </div>
+        <div class="span-4 ar-col">
+          <h3>3 aggregation methods</h3>
+          <div class="ar-item"><h4>FedAvg</h4><p>The sample-weighted average of the client models.</p></div>
+          <div class="ar-item"><h4>FedOpt</h4><p>Server SGD with momentum 0.6 and a cosine-annealed learning rate.</p></div>
+          <div class="ar-item"><h4>SCAFFOLD</h4><p>Control variates against client drift, at twice the communication and three times the local storage.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="questions" aria-labelledby="questions-h">
+    <div class="wrap">
+      <div class="grid grid--top">
+        <div class="span-5 stack-7">
+          <div class="section-head"><h2 id="questions-h">Questions about ARIA</h2></div>
+          <div class="faq__item ar-cite" id="cite"><h3>How do I cite the research?</h3>
+            <div class="ui ui-panel ar-bib">
+              <div class="ui-win__bar"><span class="ui-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="ui-win__crumb" translate="no"><b>CITATION.bib</b></span><span class="ui-spacer"></span><button class="ar-copy" type="button" data-copy="bibtex">Copy BibTeX</button></div>
+              <pre id="bibtex" translate="no">@inproceedings{siomos2024aria,
+  title = {ARIA: On the Interaction Between
+    Architectures, Initialization and
+    Aggregation Methods for Federated
+    Visual Classification},
+  author = {Siomos, Vasilis and
+    Naval-Marimont, Sergio and
+    Passerat-Palmbach, Jonathan and
+    Tarroni, Giacomo},
+  booktitle = {2024 IEEE International
+    Symposium on Biomedical Imaging (ISBI)},
+  pages = {1--5},
+  year = {2024},
+  organization = {IEEE},
+  doi = {10.1109/ISBI56570.2024.10635565}
+}</pre>
+            </div>
+          </div>
+        </div>
+        <div class="faq span-6 start-7">
+          <div class="faq__item"><h3>Which federated aggregation method should I use?</h3><p>On Fed-ISIC, SCAFFOLD added 1.32 points of balanced accuracy over FedAvg on average and FedOpt cost 0.59, yet the best Fed-ISIC run uses FedAvg. Weigh SCAFFOLD’s doubled communication.</p></div>
+          <div class="faq__item"><h3>Should my federated model be a transformer?</h3><p>Only with pre-trained weights. From scratch they did poorly, and from ImageNet the CNNs stayed marginally ahead. Self-supervised weights from similar images lifted them past their ImageNet runs on Fed-ISIC.</p></div>
+          <div class="faq__item"><h3>What if ImageNet weights do not fit my images?</h3><p>Pre-train with DINO on related public images. On Fed-ISIC, Skin-SSL weights lifted every architecture over random weights, and ConvNeXt-S with SCAFFOLD came within 0.52 of the best run.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer closing" id="contact" aria-labelledby="close-h">
+  <div class="wrap">
+    <div class="closing__cta close--word">
+      <div class="section-head--split">
+        <div><h2 id="close-h">The full ARIA paper, open on arXiv</h2><p class="t-lead">By Vasilis Siomos, Sergio Naval-Marimont, Jonathan Passerat-Palmbach and Giacomo Tarroni, IEEE ISBI 2024.</p></div>
+        <a class="btn btn--primary btn--xl" href="https://arxiv.org/pdf/2311.14625">Read the paper</a>
+      </div>
+      <p class="close__word" aria-hidden="true" translate="no">ARIA</p>
+    </div>
+    <div class="closing__links">
+      <div class="grid">
+        <div class="span-4 stack-4">
+          <a class="nav__logo" href="#top"><span class="mark" data-mark="arc" aria-hidden="true"></span>ARIA</a>
+          <p class="footer__lede">City, University of London; Imperial College London.</p>
+        </div>
+        <div class="span-2 start-7 footer__col"><h3>Paper</h3><ul><li><a href="https://arxiv.org/abs/2311.14625">arXiv</a></li><li><a href="https://doi.org/10.1109/ISBI56570.2024.10635565">IEEE Xplore</a></li><li><a href="https://huggingface.co/papers/2311.14625">Hugging Face</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>Code</h3><ul><li><a href="https://github.com/siomvas/ARIA">GitHub</a></li><li><a href="https://doi.org/10.5281/zenodo.24312208">Zenodo archive</a></li><li><a href="#cite">Citation</a></li></ul></div>
+        <div class="span-2 footer__col"><h3>Related</h3><ul><li><a href="https://siomvas.github.io/fds/">FDS</a></li><li><a href="https://siomvas.github.io/ANFR/">ANFR</a></li><li><a href="https://siomvas.github.io/FedCLAM/">FedCLAM</a></li></ul></div>
+      </div>
+      <div class="footer__legal">
+        <span>&copy; 2026 <a href="https://vsiomos.me">Vasilis Siomos</a></span>
+        <span>Dataset and model names belong to their authors</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script type="module" src="assets/system.js"></script>
+<script type="module" src="assets/motion/motion.js"></script>
+<script type="module" src="assets/layout/layout.js"></script>
+<script src="assets/page/aria.js" defer></script>
+</body>
+</html>
