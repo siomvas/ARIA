@@ -3,7 +3,7 @@
 Code for **ARIA: On the Interaction Between Architectures, Initialization and Aggregation Methods for Federated Visual Classification** (IEEE ISBI 2024).
 
 [![arXiv](https://img.shields.io/badge/arXiv-2311.14625-b31b1b.svg)](https://arxiv.org/abs/2311.14625)
-[![Venue](https://img.shields.io/badge/IEEE%20ISBI-2024-blue)](https://arxiv.org/abs/2311.14625)
+[![Venue](https://img.shields.io/badge/IEEE%20ISBI-2024-blue)](https://doi.org/10.1109/ISBI56570.2024.10635565)
 [![NVIDIA FLARE](https://img.shields.io/badge/NVIDIA%20FLARE-2.3-76b900)](https://github.com/NVIDIA/NVFlare)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24312208.svg)](https://doi.org/10.5281/zenodo.24312208)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.md)
@@ -85,7 +85,8 @@ python fl_bench/ssl_pretraining/dino_fed_isic.py --model_name resnet_50 --data_d
   booktitle    = {2024 IEEE International Symposium on Biomedical Imaging (ISBI)},
   pages        = {1--5},
   year         = {2024},
-  organization = {IEEE}
+  organization = {IEEE},
+  doi          = {10.1109/ISBI56570.2024.10635565}
 }
 ```
 
