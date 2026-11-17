@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this code, please cite the paper."
-title: "ARIA"
+title: "ARIA: Architectures, Initialization and Aggregation in Federated Visual Classification"
 authors:
   - family-names: "Siomos"
     given-names: "Vasilis"
